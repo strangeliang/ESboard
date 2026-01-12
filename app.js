@@ -5,7 +5,7 @@
 // - Bottom tabs: #arena #schedule #ranking #profile
 // - Language switch: zh/en (saved)
 // - Profile saved to localStorage
-// - Login UI: loginBtn -> userBtn + dropdown logout (localStorage)
+// - Auth (方案B): Supabase Email/Password ONLY on Profile page
 
 console.log("[ESboard] app.js loaded");
 
@@ -15,7 +15,24 @@ console.log("[ESboard] app.js loaded");
 const LS_KEY_POINTS = "esboard_points_v1";
 const LS_LANG = "esboard_lang_v1";
 const LS_PROFILE = "esboard_profile_v1";
-const LS_USER = "esboard_user";
+
+// ===============================
+// Supabase Auth Config (方案B)
+// ===============================
+// Supabase Dashboard -> Project Settings -> API
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+
+let sb = null;
+function getSupabase() {
+  if (sb) return sb;
+  if (!window.supabase) {
+    console.warn("[ESboard] supabase-js not loaded. Add CDN script in index.html <head>.");
+    return null;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return sb;
+}
 
 // ===============================
 // Points
@@ -338,7 +355,7 @@ function renderOutput(data) {
 }
 
 // ===============================
-// i18n + Tabs + Profile
+// i18n
 // ===============================
 const I18N = {
   zh: {
@@ -381,10 +398,21 @@ const I18N = {
     ranking_tip: "示例榜单（后续你可以用你的算法/积分系统替换）。",
     profile: "个人资料",
     profile_tip: "先做本地资料 localStorage，后面再接登录/后端。",
+
     pf_name: "昵称",
     pf_team: "喜欢的队伍",
     pf_save: "保存",
     pf_saved: "已保存 ✅",
+
+    auth_title: "账号系统",
+    auth_tip: "使用邮箱注册/登录（Supabase）。注册后需要到邮箱确认。",
+    auth_email: "邮箱",
+    auth_password: "密码",
+    auth_signin: "Sign in",
+    auth_signup: "Sign up",
+    auth_forgot: "Forgot password",
+    auth_logged_in: "已登录：",
+    auth_logout: "Logout",
   },
   en: {
     title: "ESboard · Arena Simulation (MVP1)",
@@ -426,10 +454,21 @@ const I18N = {
     ranking_tip: "Sample leaderboard (replace with your model/points system later).",
     profile: "Profile",
     profile_tip: "Local profile via localStorage. Sync with login/backend later.",
+
     pf_name: "Name",
     pf_team: "Favorite team",
     pf_save: "Save",
     pf_saved: "Saved ✅",
+
+    auth_title: "Account",
+    auth_tip: "Email/password via Supabase. After Sign up, confirm email first.",
+    auth_email: "Email",
+    auth_password: "Password",
+    auth_signin: "Sign in",
+    auth_signup: "Sign up",
+    auth_forgot: "Forgot password",
+    auth_logged_in: "Logged in:",
+    auth_logout: "Logout",
   },
 };
 
@@ -466,7 +505,9 @@ function applyLang() {
   if (title) document.title = title;
 }
 
+// ===============================
 // Tabs router
+// ===============================
 function showPage(route) {
   const routes = ["arena", "schedule", "ranking", "profile"];
   if (!routes.includes(route)) route = "arena";
@@ -487,7 +528,9 @@ function currentRoute() {
   return hash || "arena";
 }
 
-// Profile
+// ===============================
+// Profile (localStorage)
+// ===============================
 function loadProfile() {
   try {
     const raw = localStorage.getItem(LS_PROFILE);
@@ -521,63 +564,118 @@ function initProfileUI() {
 }
 
 // ===============================
-// Login UI (loginBtn -> userBtn + dropdown logout)
+// Supabase Auth UI (Profile page)
 // ===============================
-function renderUserUI() {
-  const loginBtn = document.getElementById("loginBtn");
-  const userBtn = document.getElementById("userBtn");
-  const usernameText = document.getElementById("usernameText");
-  const userMenu = document.getElementById("userMenu");
+function setAuthMsg(text, isError = false) {
+  const el = document.getElementById("authMsg");
+  if (!el) return;
+  el.className = isError ? "warn" : "muted";
+  el.textContent = text || "";
+}
 
-  const u = localStorage.getItem(LS_USER) || "";
-  if (!loginBtn || !userBtn || !usernameText) return;
+function setAuthUI(session) {
+  const out = document.getElementById("authLoggedOut");
+  const inn = document.getElementById("authLoggedIn");
+  const authedEmail = document.getElementById("authedEmail");
 
-  if (u) {
-    loginBtn.style.display = "none";
-    userBtn.style.display = "inline-block";
-    usernameText.textContent = u;
+  if (!out || !inn) return;
+
+  if (session && session.user) {
+    out.style.display = "none";
+    inn.style.display = "block";
+    if (authedEmail) authedEmail.textContent = session.user.email || "";
   } else {
-    loginBtn.style.display = "inline-block";
-    userBtn.style.display = "none";
-    usernameText.textContent = "";
-    userMenu?.classList.remove("show");
+    out.style.display = "block";
+    inn.style.display = "none";
+    if (authedEmail) authedEmail.textContent = "";
   }
 }
 
-function initLoginUI() {
-  const loginBtn = document.getElementById("loginBtn");
-  const userBtn = document.getElementById("userBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+async function initSupabaseAuth() {
+  const supabase = getSupabase();
+  if (!supabase) return;
 
-  loginBtn?.addEventListener("click", () => {
-    const name = prompt("请输入你的用户名 / Enter username:");
-    if (!name) return;
-    localStorage.setItem(LS_USER, name.trim());
-    renderUserUI();
+  // 初始 session
+  const { data } = await supabase.auth.getSession();
+  setAuthUI(data?.session || null);
+
+  // 监听登录状态变化
+  supabase.auth.onAuthStateChange((_event, session) => {
+    setAuthUI(session || null);
   });
 
-  userBtn?.addEventListener("click", () => {
-    document.getElementById("userMenu")?.classList.toggle("show");
-  });
+  // 绑定按钮
+  const btnIn = document.getElementById("btnSignIn");
+  const btnUp = document.getElementById("btnSignUp");
+  const btnOut = document.getElementById("btnLogout");
+  const btnForgot = document.getElementById("btnForgot");
 
-  logoutBtn?.addEventListener("click", () => {
-    localStorage.removeItem(LS_USER);
-    renderUserUI();
-  });
+  if (btnIn) {
+    btnIn.addEventListener("click", async () => {
+      setAuthMsg("");
+      const email = (document.getElementById("authEmail")?.value || "").trim();
+      const password = (document.getElementById("authPassword")?.value || "").trim();
 
-  // 点击外部关闭菜单
-  document.addEventListener("click", (e) => {
-    const area = document.getElementById("userArea");
-    const menu = document.getElementById("userMenu");
-    if (!area || !menu) return;
-    if (!area.contains(e.target)) menu.classList.remove("show");
-  });
+      if (!email || !password) return setAuthMsg("Please input email & password.", true);
 
-  renderUserUI();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return setAuthMsg(error.message, true);
+
+      setAuthMsg("Signed in ✅");
+    });
+  }
+
+  if (btnUp) {
+    btnUp.addEventListener("click", async () => {
+      setAuthMsg("");
+      const email = (document.getElementById("authEmail")?.value || "").trim();
+      const password = (document.getElementById("authPassword")?.value || "").trim();
+
+      if (!email || !password) return setAuthMsg("Please input email & password.", true);
+      if (password.length < 6) return setAuthMsg("Password must be at least 6 characters.", true);
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          // 你已在 Supabase URL Configuration 配好域名的话，这里写 origin 就够
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) return setAuthMsg(error.message, true);
+
+      setAuthMsg("Sign up success ✅ Check email to confirm, then Sign in.");
+    });
+  }
+
+  if (btnForgot) {
+    btnForgot.addEventListener("click", async () => {
+      setAuthMsg("");
+      const email = (document.getElementById("authEmail")?.value || "").trim();
+      if (!email) return setAuthMsg("Please input your email first.", true);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) return setAuthMsg(error.message, true);
+
+      setAuthMsg("Password reset email sent ✅");
+    });
+  }
+
+  if (btnOut) {
+    btnOut.addEventListener("click", async () => {
+      setAuthMsg("");
+      const { error } = await supabase.auth.signOut();
+      if (error) return setAuthMsg(error.message, true);
+      setAuthMsg("Logged out.");
+    });
+  }
 }
 
 // ===============================
-// Main init (ONE entry)
+// Main init
 // ===============================
 function initApp() {
   console.log("[ESboard] initApp");
@@ -589,12 +687,12 @@ function initApp() {
   // Router
   window.addEventListener("hashchange", () => showPage(currentRoute()));
 
-  // Initial apply
+  // Initial
   applyLang();
   showPage(currentRoute());
   initProfileUI();
   renderPoints();
-  initLoginUI();
+  initSupabaseAuth();
 
   // Event delegation for Arena buttons
   document.addEventListener("click", (e) => {
@@ -662,6 +760,7 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
+
 
 
 
