@@ -12,8 +12,8 @@ const LS_PROFILE = "esboard_profile_v1";
 // 1) 去 Supabase Dashboard -> Project Settings -> API
 // 2) 把下面两行替换成你自己的
 // ===============================
-const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+const SUPABASE_URL = "https://fnlrhubwmjxnfwmkcrx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_vNiDiJP9Sugl8U7boD3_gg_D3VxN...";
 
 let sb = null;
 function getSupabase() {
@@ -718,6 +718,7 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
+
 
 
 
