@@ -617,3 +617,107 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
+// ===============================
+// ESboard MVP1.1
+// Win Probability + Explanation Panel
+// ===============================
+(() => {
+  function calcWinProb(teamA, teamB) {
+    // 基础胜率
+    let base = 50;
+
+    // 最近战绩影响（W=+4, L=-4）
+    const scoreLast5 = (arr) =>
+      arr.reduce((s, x) => s + (x === "W" ? 4 : -4), 0);
+
+    base += scoreLast5(teamA.last5 || []);
+    base -= scoreLast5(teamB.last5 || []);
+
+    // BO 场数微调
+    if (teamA.bo === "BO5") base += 2;
+    if (teamB.bo === "BO5") base -= 2;
+
+    // clamp
+    return Math.max(5, Math.min(95, base));
+  }
+
+  function explain(teamA, teamB, winProb) {
+    const reasons = [];
+
+    reasons.push(
+      `Recent form: ${teamA.name} (${teamA.last5.join("")}) vs ${teamB.name} (${teamB.last5.join("")})`
+    );
+
+    if (winProb > 60) {
+      reasons.push(`${teamA.name} shows a stronger recent momentum.`);
+    } else if (winProb < 40) {
+      reasons.push(`${teamB.name} has a competitive advantage recently.`);
+    } else {
+      reasons.push(`Both teams show relatively balanced recent performance.`);
+    }
+
+    reasons.push(`Estimated win probability is ${winProb}%.`);
+
+    return reasons;
+  }
+
+  // Hook into existing simulate()
+  const _oldSimulate = window.simulate;
+
+  window.simulate = function (payload) {
+    const result = _oldSimulate(payload);
+
+    try {
+      const teamA = {
+        name: payload.teamA.name,
+        last5: payload.teamA.last5 || [],
+        bo: payload.bo,
+      };
+      const teamB = {
+        name: payload.teamB.name,
+        last5: payload.teamB.last5 || [],
+        bo: payload.bo,
+      };
+
+      const winProb = calcWinProb(teamA, teamB);
+      const reasons = explain(teamA, teamB, winProb);
+
+      result.winProb = winProb;
+      result.reasons = reasons;
+    } catch (e) {
+      console.warn("[ESboard] winProb calc failed", e);
+    }
+
+    return result;
+  };
+
+  // Extend renderOutput
+  const _oldRender = window.renderOutput;
+
+  window.renderOutput = function (result) {
+    _oldRender(result);
+
+    if (!result || result.winProb == null) return;
+
+    const out = document.getElementById("output");
+    if (!out) return;
+
+    const box = document.createElement("div");
+    box.style.marginTop = "12px";
+    box.style.padding = "10px";
+    box.style.border = "1px solid #ddd";
+    box.style.borderRadius = "8px";
+
+    box.innerHTML = `
+      <strong>Win Probability</strong>: ${result.winProb}%
+      <ul>
+        ${result.reasons.map((r) => `<li>${r}</li>`).join("")}
+      </ul>
+    `;
+
+    out.appendChild(box);
+  };
+})();
+
+
+
