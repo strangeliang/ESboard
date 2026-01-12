@@ -3,22 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ESboard MVP1 - Cross-Game Arena</title>
+  <title>ESboard · Arena Simulation (MVP1)</title>
 
   <style>
-   body { font-family: Arial, sans-serif; margin: 0; padding: 18px 18px 92px; background:#fff; }
-
-
-  .container{ max-width: 1280px; margin: 0 auto; }
+    body { font-family: Arial, sans-serif; margin: 24px; padding-bottom: 86px; }
+    .container{ max-width: 1100px; margin: 0 auto; }
 
     .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
-    .topbar-left{ flex:1; min-width:260px; }
+    .topbar-left h2{ margin:0; }
     .topbar-right{
-      display:flex; gap:10px; align-items:center;
-      flex-wrap:wrap; justify-content:flex-end;
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
     }
 
-    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-top:16px; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-top:16px; background:#fff; }
     .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
     label { display:block; font-size: 13px; color:#444; margin-bottom:6px; }
     input, select { padding:10px; border:1px solid #ccc; border-radius:10px; width:260px; }
@@ -41,13 +38,12 @@
     .statrow { display:flex; justify-content:space-between; font-size: 13px; padding:6px 0; border-bottom:1px dashed #eee; }
     .statrow:last-child { border-bottom:0; }
     .big { font-size: 18px; font-weight: 700; }
-    .badge { display:inline-block; padding:4px 8px; border-radius:999px; background:#f2f2f2; font-size:12px; margin-left:8px; }
 
-    /* ===== 页面切换 ===== */
+    /* pages */
     .page { display:none; }
     .page.active { display:block; }
 
-    /* ===== 语言切换按钮 ===== */
+    /* lang */
     .lang { display:flex; gap:8px; align-items:center; }
     .lang button{
       padding:6px 10px; border-radius:999px; border:1px solid #ddd;
@@ -57,32 +53,7 @@
       background:#111; color:#fff; border-color:#111;
     }
 
-    /* ===== 登录下拉 ===== */
-    .userArea{ position:relative; }
-    .userMenu{
-      display:none;
-      position:absolute;
-      right:0;
-      top:42px;
-      background:#fff;
-      border:1px solid #ddd;
-      border-radius:12px;
-      min-width:140px;
-      box-shadow:0 6px 20px rgba(0,0,0,.08);
-      z-index:999;
-      padding:6px;
-    }
-    .userMenu.show{ display:block; }
-    .userMenuItem{
-      padding:10px;
-      cursor:pointer;
-      text-align:center;
-      border-radius:10px;
-      font-size:14px;
-    }
-    .userMenuItem:hover{ background:#f2f2f2; }
-
-    /* ===== 底部导航 ===== */
+    /* bottom nav */
     .bottomnav{
       position:fixed; left:0; right:0; bottom:0;
       background:#fff; border-top:1px solid #eee;
@@ -99,7 +70,16 @@
     .tab .icon{ font-size:18px; line-height:1; }
     .tab .label{ font-size:12px; font-weight:800; }
     .tab.active{ color:#111; background:#f2f2f2; }
+
+    /* profile auth layout */
+    .authHint{ margin-top:6px; }
+    .authGrid{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+    .authGrid input{ width:260px; }
+    .authBtns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .divider{ height:1px; background:#eee; margin:16px 0; }
   </style>
+
+  <!-- ✅ Supabase JS CDN（必须） -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -108,23 +88,21 @@
 
     <!-- ===== 顶部栏 ===== -->
     <div class="topbar">
-      <!-- 左边：标题 -->
       <div class="topbar-left">
-        <h2 style="margin:0;" data-i18n="title">ESboard · Arena Simulation (MVP1)</h2>
+        <h2 data-i18n="title">ESboard · Arena Simulation (MVP1)</h2>
         <div class="muted" data-i18n="subtitle">
           新增：跨游戏/跨领域对战（例：T1 vs Team Spirit）。输出为“娱乐 + 可解释分析”，非真实比赛预测。
         </div>
       </div>
 
-      <!-- 右边：按钮区 -->
- <div class="topbar-right">
-  <div class="lang">
-    <button id="btnZh" type="button">中文</button>
-    <button id="btnEn" type="button">EN</button>
-  </div>
-  <div class="pill">Points: <span id="points">0</span></div>
-</div>
-
+      <div class="topbar-right">
+        <div class="lang">
+          <button id="btnZh" type="button">中文</button>
+          <button id="btnEn" type="button">EN</button>
+        </div>
+        <div class="pill">Points: <span id="points">0</span></div>
+      </div>
+    </div>
 
     <!-- ===== 页面 1：Arena ===== -->
     <div id="page-arena" class="page active">
@@ -191,8 +169,8 @@
         </div>
 
         <div class="row" style="margin-top:16px;">
-          <button class="btn" id="btnGen" data-i18n="gen" type="button">Generate Simulation</button>
-          <button class="btn2" id="btnReset" data-i18n="reset_points" type="button">Reset Points</button>
+          <button class="btn" id="btnGen" data-i18n="gen">Generate Simulation</button>
+          <button class="btn2" id="btnReset" data-i18n="reset_points">Reset Points</button>
           <span id="status" class="muted"></span>
         </div>
       </div>
@@ -270,75 +248,73 @@
       </div>
     </div>
 
-    <!-- ===== 页面 4：个人资料 ===== -->
-<div id="page-profile" class="page">
-  <div class="card">
-    <h3 data-i18n="profile">Profile</h3>
-    <div class="muted" data-i18n="profile_tip">先做本地资料 localStorage，后面再接登录/后端。</div>
-  </div>
+    <!-- ===== 页面 4：个人资料（含 Supabase Auth） ===== -->
+    <div id="page-profile" class="page">
+      <div class="card">
+        <h3 data-i18n="profile">Profile</h3>
+        <div class="muted" data-i18n="profile_tip">先做本地资料 localStorage，后面再接登录/后端。</div>
+      </div>
 
-  <!-- ✅ Auth 区 -->
-  <div class="card">
-    <h3>Account</h3>
-    <div class="muted" style="margin-bottom:10px;">
-      Sign up 用邮箱注册；会发确认邮件。确认后再 Sign in。
-    </div>
-
-    <!-- 未登录：显示登录/注册表单 -->
-    <div id="authLoggedOut">
-      <div class="row">
-        <div style="min-width:280px;">
-          <label>Email</label>
-          <input id="authEmail" type="email" placeholder="you@example.com" />
+      <div class="card">
+        <h3 data-i18n="account">Account</h3>
+        <div class="muted authHint" data-i18n="account_tip">
+          Sign up 用邮箱注册，会发确认邮件。确认后再 Sign in。
         </div>
-        <div style="min-width:280px;">
-          <label>Password</label>
-          <input id="authPassword" type="password" placeholder="Min 6 characters" />
+
+        <!-- 未登录 -->
+        <div id="authLoggedOut">
+          <div class="authGrid" style="margin-top:12px;">
+            <div>
+              <label data-i18n="email">Email</label>
+              <input id="authEmail" placeholder="you@example.com" />
+            </div>
+            <div>
+              <label data-i18n="password">Password</label>
+              <input id="authPassword" type="password" placeholder="Min 6 characters" />
+            </div>
+          </div>
+
+          <div class="authBtns">
+            <button class="btn" id="btnSignIn" data-i18n="sign_in">Sign In</button>
+            <button class="btn2" id="btnSignUp" data-i18n="sign_up">Sign Up</button>
+            <button class="btn2" id="btnForgot" data-i18n="forgot">Forgot Password</button>
+          </div>
+
+          <div id="authMsg" class="muted" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- 已登录 -->
+        <div id="authLoggedIn" style="display:none;">
+          <div class="pill">✅ <span data-i18n="signed_as">Signed in as</span>: <b id="authedEmail"></b></div>
+          <div class="authBtns" style="margin-top:12px;">
+            <button class="btn2" id="btnLogout" data-i18n="logout">Logout</button>
+          </div>
+          <div id="authMsg2" class="muted" style="margin-top:10px;"></div>
         </div>
       </div>
 
-      <div class="row" style="margin-top:12px;">
-        <button class="btn" id="btnSignIn">Sign In</button>
-        <button class="btn2" id="btnSignUp">Sign Up</button>
-        <button class="btn2" id="btnForgot">Forgot Password</button>
-        <span id="authMsg" class="muted"></span>
+      <div class="card">
+        <h3 data-i18n="profile">Profile</h3>
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label data-i18n="pf_name">Name</label>
+            <input id="pfName" placeholder="Your name" />
+          </div>
+          <div>
+            <label data-i18n="pf_team">Favorite Team</label>
+            <input id="pfTeam" placeholder="e.g. T1" />
+          </div>
+          <div>
+            <button class="btn" id="pfSave" data-i18n="pf_save">Save</button>
+          </div>
+          <span id="pfStatus" class="muted"></span>
+        </div>
       </div>
     </div>
 
-    <!-- 已登录：显示用户信息 + 退出 -->
-    <div id="authLoggedIn" style="display:none;">
-      <div class="row">
-        <div class="pill">✅ Signed in as: <b id="authedEmail"></b></div>
-        <button class="btn2" id="btnLogout">Logout</button>
-        <span id="authMsg2" class="muted"></span>
-      </div>
-    </div>
   </div>
 
-  <!-- ✅ 你原来的本地资料（仍然保留） -->
-  <div class="card">
-    <h3 data-i18n="profile">Profile</h3>
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label data-i18n="pf_name">Name</label>
-        <input id="pfName" placeholder="Your name" />
-      </div>
-      <div>
-        <label data-i18n="pf_team">Favorite Team</label>
-        <input id="pfTeam" placeholder="e.g. T1" />
-      </div>
-      <div>
-        <button class="btn" id="pfSave" data-i18n="pf_save">Save</button>
-      </div>
-      <span id="pfStatus" class="muted"></span>
-    </div>
-  </div>
-</div>
-
-
-  </div><!-- /container -->
-
-  <!-- ===== 底部导航（固定底部，必须在 container 外） ===== -->
+  <!-- ===== 底部导航 ===== -->
   <div class="bottomnav">
     <a class="tab active" href="#arena" data-route="arena">
       <div class="icon">⚔️</div>
@@ -361,6 +337,8 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
+
 
 
 
