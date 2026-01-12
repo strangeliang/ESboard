@@ -1,12 +1,3 @@
-// ESboard MVP1 - Arena Simulation (Cross-Game) + Shell (Tabs/i18n/Profile)
-// - Same-game + Cross-game Arena
-// - Explainable: attributes + reasons + timeline
-// - Points stored in localStorage (+10 per simulation)
-// - Bottom tabs: #arena #schedule #ranking #profile
-// - Language switch: zh/en (saved)
-// - Profile saved to localStorage
-// - Auth (方案B): Supabase Email/Password ONLY on Profile page
-
 console.log("[ESboard] app.js loaded");
 
 // ===============================
@@ -17,9 +8,10 @@ const LS_LANG = "esboard_lang_v1";
 const LS_PROFILE = "esboard_profile_v1";
 
 // ===============================
-// Supabase Auth Config (方案B)
+// ✅ Supabase Auth (方案 B)
+// 1) 去 Supabase Dashboard -> Project Settings -> API
+// 2) 把下面两行替换成你自己的
 // ===============================
-// Supabase Dashboard -> Project Settings -> API
 const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
 const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
 
@@ -27,7 +19,7 @@ let sb = null;
 function getSupabase() {
   if (sb) return sb;
   if (!window.supabase) {
-    console.warn("[ESboard] supabase-js not loaded. Add CDN script in index.html <head>.");
+    console.warn("[ESboard] supabase-js not loaded. Did you add the CDN <script> in index.html?");
     return null;
   }
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -65,7 +57,6 @@ function setStatus(text, kind = "muted") {
 // Helpers
 // ===============================
 function parseLast5(str) {
-  // Accept "W,W,L,W,L" or "WWLWL"
   const s = (str || "").trim().toUpperCase();
   if (!s) return [];
   if (s.includes(",")) {
@@ -83,7 +74,6 @@ function formScore(last5) {
   return wins / last5.length; // 0..1
 }
 
-// ---- deterministic random (stable per team) ----
 function hashString(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -92,17 +82,15 @@ function hashString(str) {
   }
   return h >>> 0;
 }
+
 function seeded01(seed) {
-  // xorshift32 -> 0..1
   let x = seed >>> 0;
-  x ^= x << 13;
-  x >>>= 0;
-  x ^= x >> 17;
-  x >>>= 0;
-  x ^= x << 5;
-  x >>>= 0;
+  x ^= x << 13; x >>>= 0;
+  x ^= x >> 17; x >>>= 0;
+  x ^= x << 5;  x >>>= 0;
   return (x >>> 0) / 4294967296;
 }
+
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
 }
@@ -118,24 +106,22 @@ function buildTeamProfile({ name, game, last5 }) {
 
   const seed = hashString(`${name}|${game}`);
   const r = (k) => seeded01(seed + k);
+  const v = (x) => (x - 0.5) * 12; // ±6
 
-  // Small personality variance per team (±6)
-  const v = (x) => (x - 0.5) * 12;
-
-  const form = formScore(last5); // 0..1
+  const form = formScore(last5);
   const form100 = Math.round(form * 100);
 
   return {
     name,
     game,
     mechanical: clamp(Math.round(base.mechanical + v(r(1))), 40, 99),
-    iq: clamp(Math.round(base.iq + v(r(2))), 40, 99),
-    teamwork: clamp(Math.round(base.teamwork + v(r(3))), 40, 99),
-    clutch: clamp(Math.round(base.clutch + v(r(4))), 40, 99),
-    adapt: clamp(Math.round(base.adapt + v(r(5))), 40, 99),
-    strat: clamp(Math.round(base.strat + v(r(6))), 40, 99),
-    form: clamp(form100, 0, 100),
-    last5: last5.join("") || "N/A",
+    iq:         clamp(Math.round(base.iq         + v(r(2))), 40, 99),
+    teamwork:   clamp(Math.round(base.teamwork   + v(r(3))), 40, 99),
+    clutch:     clamp(Math.round(base.clutch     + v(r(4))), 40, 99),
+    adapt:      clamp(Math.round(base.adapt      + v(r(5))), 40, 99),
+    strat:      clamp(Math.round(base.strat      + v(r(6))), 40, 99),
+    form:       clamp(form100, 0, 100),
+    last5:      last5.join("") || "N/A",
   };
 }
 
@@ -176,6 +162,7 @@ function topDiffReasons(a, b) {
   const keys = ["mechanical", "iq", "teamwork", "clutch", "form", "adapt", "strat"];
   const diffs = keys.map((k) => ({ k, diff: a[k] - b[k] }));
   diffs.sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff));
+
   const pretty = {
     mechanical: "Mechanical（操作/枪法）",
     iq: "Game IQ（理解/决策）",
@@ -185,6 +172,7 @@ function topDiffReasons(a, b) {
     adapt: "Adapt（适应/学习）",
     strat: "Strat（战术/体系）",
   };
+
   return diffs.slice(0, 3).map((x) => {
     const side = x.diff > 0 ? "Team A" : "Team B";
     const val = Math.abs(x.diff);
@@ -200,7 +188,7 @@ function buildTimeline(mode, a, b, winnerSide) {
   if (arena) {
     return [
       { phase: "Early", event: `ESboard Arena 开局：双方互相试探，${w} 通过“节奏/资源”取得小优势。` },
-      { phase: "Mid", event: `中盘：关键在执行与沟通。${w} 在一次“关键交换”中扩大优势，${l} 尝试反打。` },
+      { phase: "Mid",  event: `中盘：关键在执行与沟通。${w} 在一次“关键交换”中扩大优势，${l} 尝试反打。` },
       { phase: "Late", event: `终盘：抗压与关键决策决定胜负。${w} 抓住对手失误完成终结。` },
     ];
   }
@@ -208,14 +196,14 @@ function buildTimeline(mode, a, b, winnerSide) {
   if (a.game === "lol" && b.game === "lol") {
     return [
       { phase: "Early", event: "前期：线权/野区节奏与第一条资源，决定中期主动权。" },
-      { phase: "Mid", event: `中期：团战/运营二选一，${w} 的决策更干净，逐步滚起雪球。` },
+      { phase: "Mid",  event: `中期：团战/运营二选一，${w} 的决策更干净，逐步滚起雪球。` },
       { phase: "Late", event: `后期：大龙/远古龙决战，${w} 处理更稳，拿下比赛。` },
     ];
   }
 
   return [
     { phase: "Early", event: "开局：枪感与默认控图，决定经济走向。" },
-    { phase: "Mid", event: `中段：关键翻盘局/强起局，${w} 赢下关键回合建立心理优势。` },
+    { phase: "Mid",  event: `中段：关键翻盘局/强起局，${w} 赢下关键回合建立心理优势。` },
     { phase: "Late", event: `收尾：残局与道具执行，${w} 更稳，终结比赛。` },
   ];
 }
@@ -251,8 +239,6 @@ function simulate({ mode, bo, teamA, teamB }) {
       ? `跨领域 Arena 模式：用统一属性面板模拟对抗。${winnerSide === "A" ? teamA.name : teamB.name} 略占上风（Confidence: ${confidence}）。`
       : `同游戏对战：${winnerSide === "A" ? teamA.name : teamB.name} 更可能在 BO${bo} 中赢下系列赛（Confidence: ${confidence}）。`;
 
-  const timeline = buildTimeline(mode, teamA, teamB, winnerSide);
-
   return {
     mode,
     bo: `BO${bo}`,
@@ -263,7 +249,7 @@ function simulate({ mode, bo, teamA, teamB }) {
     teamA,
     teamB,
     reasons,
-    timeline,
+    timeline: buildTimeline(mode, teamA, teamB, winnerSide),
   };
 }
 
@@ -273,6 +259,7 @@ function simulate({ mode, bo, teamA, teamB }) {
 function renderStats(containerId, p) {
   const el = document.getElementById(containerId);
   if (!el) return;
+
   const rows = [
     ["Mechanical", p.mechanical],
     ["Game IQ", p.iq],
@@ -282,6 +269,7 @@ function renderStats(containerId, p) {
     ["Adapt", p.adapt],
     ["Strat", p.strat],
   ];
+
   el.innerHTML = rows
     .map(([k, v]) => `<div class="statrow"><div>${k}</div><div><b>${v}</b></div></div>`)
     .join("");
@@ -294,64 +282,50 @@ function renderOutput(data) {
   if (wrap) wrap.style.display = "block";
 
   const title = `${data.teamA.name} (${data.teamA.game.toUpperCase()}) vs ${data.teamB.name} (${data.teamB.game.toUpperCase()})`;
-  const outMatchTitle = document.getElementById("outMatchTitle");
-  if (outMatchTitle) outMatchTitle.textContent = title;
+  document.getElementById("outMatchTitle").textContent = title;
 
   const outModeNote = document.getElementById("outModeNote");
-  if (outModeNote) {
-    outModeNote.textContent =
-      data.mode === "arena"
-        ? "Mode: Cross-Game Arena（跨领域统一规则）"
-        : "Mode: Same Game（同游戏规则）";
-  }
+  outModeNote.textContent =
+    data.mode === "arena"
+      ? "Mode: Cross-Game Arena（跨领域统一规则）"
+      : "Mode: Same Game（同游戏规则）";
 
-  const outWinA = document.getElementById("outWinA");
-  const outWinB = document.getElementById("outWinB");
-  if (outWinA) outWinA.textContent = String(data.winProb.A);
-  if (outWinB) outWinB.textContent = String(data.winProb.B);
+  document.getElementById("outWinA").textContent = String(data.winProb.A);
+  document.getElementById("outWinB").textContent = String(data.winProb.B);
 
   const winnerName = data.winnerSide === "A" ? data.teamA.name : data.teamB.name;
-  const outWinnerText = document.getElementById("outWinnerText");
-  if (outWinnerText) {
-    outWinnerText.textContent = `Likely winner: ${winnerName} · Confidence: ${data.confidence}`;
-  }
+  document.getElementById("outWinnerText").textContent =
+    `Likely winner: ${winnerName} · Confidence: ${data.confidence}`;
 
-  const outTeamAName = document.getElementById("outTeamAName");
-  const outTeamBName = document.getElementById("outTeamBName");
-  if (outTeamAName) outTeamAName.textContent = data.teamA.name;
-  if (outTeamBName) outTeamBName.textContent = data.teamB.name;
+  document.getElementById("outTeamAName").textContent = data.teamA.name;
+  document.getElementById("outTeamBName").textContent = data.teamB.name;
 
-  const outTeamAGame = document.getElementById("outTeamAGame");
-  const outTeamBGame = document.getElementById("outTeamBGame");
-  if (outTeamAGame) outTeamAGame.textContent = `Game: ${data.teamA.game.toUpperCase()}  · Last5: ${data.teamA.last5}`;
-  if (outTeamBGame) outTeamBGame.textContent = `Game: ${data.teamB.game.toUpperCase()}  · Last5: ${data.teamB.last5}`;
+  document.getElementById("outTeamAGame").textContent =
+    `Game: ${data.teamA.game.toUpperCase()}  · Last5: ${data.teamA.last5}`;
+  document.getElementById("outTeamBGame").textContent =
+    `Game: ${data.teamB.game.toUpperCase()}  · Last5: ${data.teamB.last5}`;
 
   renderStats("outStatsA", data.teamA);
   renderStats("outStatsB", data.teamB);
 
   const ul = document.getElementById("outReasons");
-  if (ul) {
-    ul.innerHTML = "";
-    data.reasons.forEach((r) => {
-      const li = document.createElement("li");
-      li.textContent = r;
-      ul.appendChild(li);
-    });
-  }
+  ul.innerHTML = "";
+  data.reasons.forEach((r) => {
+    const li = document.createElement("li");
+    li.textContent = r;
+    ul.appendChild(li);
+  });
 
   const tl = document.getElementById("outTimeline");
-  if (tl) {
-    tl.innerHTML = "";
-    data.timeline.forEach((item) => {
-      const div = document.createElement("div");
-      div.className = "event";
-      div.innerHTML = `<div class="phase">${item.phase}</div><div>${item.event}</div>`;
-      tl.appendChild(div);
-    });
-  }
+  tl.innerHTML = "";
+  data.timeline.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "event";
+    div.innerHTML = `<div class="phase">${item.phase}</div><div>${item.event}</div>`;
+    tl.appendChild(div);
+  });
 
-  const outJson = document.getElementById("outJson");
-  if (outJson) outJson.textContent = JSON.stringify(data, null, 2);
+  document.getElementById("outJson").textContent = JSON.stringify(data, null, 2);
 }
 
 // ===============================
@@ -361,9 +335,9 @@ const I18N = {
   zh: {
     title: "ESboard · Arena Simulation (MVP1)",
     subtitle: "新增：跨游戏/跨领域对战（例：T1 vs Team Spirit）。输出为“娱乐 + 可解释分析”，非真实比赛预测。",
-    input: "Input",
-    output: "Output",
-    output_empty: "还没有输出。请填写队伍并点击 Generate。",
+    input: "输入",
+    output: "输出",
+    output_empty: "暂无输出。请填写队伍信息并点击“生成模拟”。",
     winprob: "胜率",
     panel: "统一属性面板",
     reasons: "理由",
@@ -371,48 +345,48 @@ const I18N = {
     rawjson: "原始 JSON",
     disclaimer: "免责声明：仅用于分析与娱乐，不构成投注建议。",
 
-    mode: "Mode",
+    mode: "模式",
     bo: "BO",
     mode_same: "同游戏对战 (LoL vs LoL / CS2 vs CS2)",
     mode_cross: "跨领域 Arena（跨游戏）",
     arena_tip: "Arena 模式会把不同游戏映射到统一属性面板（Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat）。",
 
-    teamA_game: "Team A 游戏",
-    teamA_name: "Team A 名称",
-    teamA_last5: "Team A 近5场 (W/L)",
-    teamB_game: "Team B 游戏",
-    teamB_name: "Team B 名称",
-    teamB_last5: "Team B 近5场 (W/L)",
+    teamA_game: "A队比赛",
+    teamA_name: "A队名称",
+    teamA_last5: "A队最近5场（胜/负）",
+    teamB_game: "B队比赛",
+    teamB_name: "B队名称",
+    teamB_last5: "B队最近5场（胜/负）",
 
     gen: "生成模拟",
     reset_points: "重置积分",
 
-    tab_arena: "Arena",
-    tab_schedule: "赛程",
-    tab_ranking: "排行榜",
+    tab_arena: "竞技场",
+    tab_schedule: "日程",
+    tab_ranking: "排名",
     tab_profile: "个人资料",
 
-    schedule: "赛程",
+    schedule: "日程",
     schedule_tip: "这里之后可以接后端/数据库，展示真实赛事日程。",
-    ranking: "排行榜",
+    ranking: "排名",
     ranking_tip: "示例榜单（后续你可以用你的算法/积分系统替换）。",
     profile: "个人资料",
     profile_tip: "先做本地资料 localStorage，后面再接登录/后端。",
+
+    account: "账号",
+    account_tip: "Sign up 用邮箱注册，会发确认邮件。确认后再 Sign in。",
+    email: "邮箱",
+    password: "密码",
+    sign_in: "登录",
+    sign_up: "注册",
+    forgot: "忘记密码",
+    signed_as: "已登录账号",
+    logout: "退出登录",
 
     pf_name: "昵称",
     pf_team: "喜欢的队伍",
     pf_save: "保存",
     pf_saved: "已保存 ✅",
-
-    auth_title: "账号系统",
-    auth_tip: "使用邮箱注册/登录（Supabase）。注册后需要到邮箱确认。",
-    auth_email: "邮箱",
-    auth_password: "密码",
-    auth_signin: "Sign in",
-    auth_signup: "Sign up",
-    auth_forgot: "Forgot password",
-    auth_logged_in: "已登录：",
-    auth_logout: "Logout",
   },
   en: {
     title: "ESboard · Arena Simulation (MVP1)",
@@ -455,20 +429,20 @@ const I18N = {
     profile: "Profile",
     profile_tip: "Local profile via localStorage. Sync with login/backend later.",
 
+    account: "Account",
+    account_tip: "Sign up with email; you'll receive a confirmation email. Confirm, then sign in.",
+    email: "Email",
+    password: "Password",
+    sign_in: "Sign In",
+    sign_up: "Sign Up",
+    forgot: "Forgot Password",
+    signed_as: "Signed in as",
+    logout: "Logout",
+
     pf_name: "Name",
     pf_team: "Favorite team",
     pf_save: "Save",
     pf_saved: "Saved ✅",
-
-    auth_title: "Account",
-    auth_tip: "Email/password via Supabase. After Sign up, confirm email first.",
-    auth_email: "Email",
-    auth_password: "Password",
-    auth_signin: "Sign in",
-    auth_signup: "Sign up",
-    auth_forgot: "Forgot password",
-    auth_logged_in: "Logged in:",
-    auth_logout: "Logout",
   },
 };
 
@@ -490,10 +464,8 @@ function applyLang() {
 
   const zhBtn = document.getElementById("btnZh");
   const enBtn = document.getElementById("btnEn");
-  if (zhBtn && enBtn) {
-    zhBtn.classList.toggle("active", lang === "zh");
-    enBtn.classList.toggle("active", lang === "en");
-  }
+  zhBtn?.classList.toggle("active", lang === "zh");
+  enBtn?.classList.toggle("active", lang === "en");
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
@@ -514,7 +486,7 @@ function showPage(route) {
 
   routes.forEach((r) => {
     const page = document.getElementById(`page-${r}`);
-    if (page) page.classList.toggle("active", r === route);
+    page?.classList.toggle("active", r === route);
   });
 
   document.querySelectorAll(".tab").forEach((a) => {
@@ -529,7 +501,7 @@ function currentRoute() {
 }
 
 // ===============================
-// Profile (localStorage)
+// Local Profile
 // ===============================
 function loadProfile() {
   try {
@@ -547,7 +519,6 @@ function initProfileUI() {
   const teamEl = document.getElementById("pfTeam");
   const saveBtn = document.getElementById("pfSave");
   const statusEl = document.getElementById("pfStatus");
-
   if (!nameEl || !teamEl || !saveBtn) return;
 
   const p = loadProfile();
@@ -564,20 +535,19 @@ function initProfileUI() {
 }
 
 // ===============================
-// Supabase Auth UI (Profile page)
+// ✅ Supabase Auth UI (Profile Page)
 // ===============================
 function setAuthMsg(text, isError = false) {
   const el = document.getElementById("authMsg");
-  if (!el) return;
-  el.className = isError ? "warn" : "muted";
-  el.textContent = text || "";
+  const el2 = document.getElementById("authMsg2");
+  if (el) { el.className = isError ? "warn" : "muted"; el.textContent = text || ""; }
+  if (el2){ el2.className = isError ? "warn" : "muted"; el2.textContent = text || ""; }
 }
 
 function setAuthUI(session) {
   const out = document.getElementById("authLoggedOut");
   const inn = document.getElementById("authLoggedIn");
   const authedEmail = document.getElementById("authedEmail");
-
   if (!out || !inn) return;
 
   if (session && session.user) {
@@ -595,92 +565,82 @@ async function initSupabaseAuth() {
   const supabase = getSupabase();
   if (!supabase) return;
 
+  // 如果你还没填 URL/KEY，这里会提示一下
+  if (
+    !SUPABASE_URL || SUPABASE_URL.includes("PASTE_") ||
+    !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("PASTE_")
+  ) {
+    setAuthMsg("⚠️ Please paste your Supabase URL & ANON KEY in app.js first.", true);
+    return;
+  }
+
   // 初始 session
   const { data } = await supabase.auth.getSession();
   setAuthUI(data?.session || null);
 
-  // 监听登录状态变化
+  // 监听变化
   supabase.auth.onAuthStateChange((_event, session) => {
     setAuthUI(session || null);
   });
 
   // 绑定按钮
-  const btnIn = document.getElementById("btnSignIn");
-  const btnUp = document.getElementById("btnSignUp");
-  const btnOut = document.getElementById("btnLogout");
-  const btnForgot = document.getElementById("btnForgot");
+  document.getElementById("btnSignIn")?.addEventListener("click", async () => {
+    setAuthMsg("");
+    const email = (document.getElementById("authEmail")?.value || "").trim();
+    const password = (document.getElementById("authPassword")?.value || "").trim();
+    if (!email || !password) return setAuthMsg("Please input email & password.", true);
 
-  if (btnIn) {
-    btnIn.addEventListener("click", async () => {
-      setAuthMsg("");
-      const email = (document.getElementById("authEmail")?.value || "").trim();
-      const password = (document.getElementById("authPassword")?.value || "").trim();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return setAuthMsg(error.message, true);
+    setAuthMsg("Signed in ✅");
+  });
 
-      if (!email || !password) return setAuthMsg("Please input email & password.", true);
+  document.getElementById("btnSignUp")?.addEventListener("click", async () => {
+    setAuthMsg("");
+    const email = (document.getElementById("authEmail")?.value || "").trim();
+    const password = (document.getElementById("authPassword")?.value || "").trim();
+    if (!email || !password) return setAuthMsg("Please input email & password.", true);
+    if (password.length < 6) return setAuthMsg("Password must be at least 6 characters.", true);
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return setAuthMsg(error.message, true);
-
-      setAuthMsg("Signed in ✅");
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        // 你在 Supabase URL Configuration 配的域名会用到
+        emailRedirectTo: window.location.origin,
+      },
     });
-  }
+    if (error) return setAuthMsg(error.message, true);
 
-  if (btnUp) {
-    btnUp.addEventListener("click", async () => {
-      setAuthMsg("");
-      const email = (document.getElementById("authEmail")?.value || "").trim();
-      const password = (document.getElementById("authPassword")?.value || "").trim();
+    setAuthMsg("Sign up success ✅ Please check your email to confirm, then Sign in.");
+  });
 
-      if (!email || !password) return setAuthMsg("Please input email & password.", true);
-      if (password.length < 6) return setAuthMsg("Password must be at least 6 characters.", true);
+  document.getElementById("btnForgot")?.addEventListener("click", async () => {
+    setAuthMsg("");
+    const email = (document.getElementById("authEmail")?.value || "").trim();
+    if (!email) return setAuthMsg("Please input your email first.", true);
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          // 你已在 Supabase URL Configuration 配好域名的话，这里写 origin 就够
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (error) return setAuthMsg(error.message, true);
-
-      setAuthMsg("Sign up success ✅ Check email to confirm, then Sign in.");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
     });
-  }
+    if (error) return setAuthMsg(error.message, true);
 
-  if (btnForgot) {
-    btnForgot.addEventListener("click", async () => {
-      setAuthMsg("");
-      const email = (document.getElementById("authEmail")?.value || "").trim();
-      if (!email) return setAuthMsg("Please input your email first.", true);
+    setAuthMsg("Password reset email sent ✅");
+  });
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
-      });
-      if (error) return setAuthMsg(error.message, true);
-
-      setAuthMsg("Password reset email sent ✅");
-    });
-  }
-
-  if (btnOut) {
-    btnOut.addEventListener("click", async () => {
-      setAuthMsg("");
-      const { error } = await supabase.auth.signOut();
-      if (error) return setAuthMsg(error.message, true);
-      setAuthMsg("Logged out.");
-    });
-  }
+  document.getElementById("btnLogout")?.addEventListener("click", async () => {
+    setAuthMsg("");
+    const { error } = await supabase.auth.signOut();
+    if (error) return setAuthMsg(error.message, true);
+    setAuthMsg("Logged out.");
+  });
 }
 
 // ===============================
-// Main init
+// App init
 // ===============================
 function initApp() {
-  console.log("[ESboard] initApp");
-
-  // Language buttons
+  // Lang buttons
   document.getElementById("btnZh")?.addEventListener("click", () => setLang("zh"));
   document.getElementById("btnEn")?.addEventListener("click", () => setLang("en"));
 
@@ -694,7 +654,7 @@ function initApp() {
   renderPoints();
   initSupabaseAuth();
 
-  // Event delegation for Arena buttons
+  // Arena buttons
   document.addEventListener("click", (e) => {
     const tEl = e.target;
     if (!tEl) return;
@@ -749,17 +709,16 @@ function initApp() {
     if (tEl.id === "btnReset") {
       setPoints(0);
       setStatus("Points reset to 0.", "ok");
-      return;
     }
   });
 }
 
-// DOM ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initApp);
 } else {
   initApp();
 }
+
 
 
 
