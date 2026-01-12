@@ -718,6 +718,37 @@ if (document.readyState === "loading") {
     out.appendChild(box);
   };
 })();
+// ===============================
+// Simple Login (MVP - Local Only)
+// ===============================
+
+function initLogin() {
+  const btn = document.getElementById("loginBtn");
+  if (!btn) return;
+
+  // 如果之前登录过
+  const savedUser = localStorage.getItem("esboard_user");
+  if (savedUser) {
+    btn.textContent = savedUser;
+  }
+
+  btn.addEventListener("click", () => {
+    const name = prompt("请输入你的用户名 / Enter username:");
+    if (!name) return;
+
+    localStorage.setItem("esboard_user", name);
+    btn.textContent = name;
+  });
+}
+
+// 确保 DOM ready 后执行
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initLogin);
+} else {
+  initLogin();
+}
+
+
 
 
 
