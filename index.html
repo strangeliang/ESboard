@@ -1,13 +1,22 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-Hans">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ESboard MVP1 - Cross-Game Arena</title>
+
   <style>
     body { font-family: Arial, sans-serif; margin: 24px; padding-bottom: 86px; }
 
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .container{ max-width: 1100px; margin: 0 auto; }
+
+    .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+    .topbar-left{ flex:1; min-width:260px; }
+    .topbar-right{
+      display:flex; gap:10px; align-items:center;
+      flex-wrap:wrap; justify-content:flex-end;
+    }
+
     .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-top:16px; }
     .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
     label { display:block; font-size: 13px; color:#444; margin-bottom:6px; }
@@ -33,11 +42,11 @@
     .big { font-size: 18px; font-weight: 700; }
     .badge { display:inline-block; padding:4px 8px; border-radius:999px; background:#f2f2f2; font-size:12px; margin-left:8px; }
 
-    /* ===== 新增：页面切换 ===== */
+    /* ===== 页面切换 ===== */
     .page { display:none; }
     .page.active { display:block; }
 
-    /* ===== 新增：语言切换按钮 ===== */
+    /* ===== 语言切换按钮 ===== */
     .lang { display:flex; gap:8px; align-items:center; }
     .lang button{
       padding:6px 10px; border-radius:999px; border:1px solid #ddd;
@@ -47,7 +56,32 @@
       background:#111; color:#fff; border-color:#111;
     }
 
-    /* ===== 新增：底部导航 ===== */
+    /* ===== 登录下拉 ===== */
+    .userArea{ position:relative; }
+    .userMenu{
+      display:none;
+      position:absolute;
+      right:0;
+      top:42px;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:12px;
+      min-width:140px;
+      box-shadow:0 6px 20px rgba(0,0,0,.08);
+      z-index:999;
+      padding:6px;
+    }
+    .userMenu.show{ display:block; }
+    .userMenuItem{
+      padding:10px;
+      cursor:pointer;
+      text-align:center;
+      border-radius:10px;
+      font-size:14px;
+    }
+    .userMenuItem:hover{ background:#f2f2f2; }
+
+    /* ===== 底部导航 ===== */
     .bottomnav{
       position:fixed; left:0; right:0; bottom:0;
       background:#fff; border-top:1px solid #eee;
@@ -68,246 +102,211 @@
 </head>
 
 <body>
-  <!-- ===== 顶部栏：加了语言切换 ===== -->
-<div class="topbar">
-  <!-- 左边：标题 -->
-  <div class="topbar-left">
-    <h2 style="margin:0;" data-i18n="title">ESboard · Arena Simulation (MVP1)</h2>
-    <div class="muted" data-i18n="subtitle">
-      新增：跨游戏/跨领域对战（例：T1 vs Team Spirit）。输出为“娱乐 + 可解释分析”，非真实比赛预测。
-    </div>
-  </div>
+  <div class="container">
 
-  <!-- 右边：按钮区 -->
-  <div class="topbar-right">
-    <div class="lang">
-      <button id="btnZh" type="button">中文</button>
-      <button id="btnEn" type="button">EN</button>
-    </div>
+    <!-- ===== 顶部栏 ===== -->
+    <div class="topbar">
+      <!-- 左边：标题 -->
+      <div class="topbar-left">
+        <h2 style="margin:0;" data-i18n="title">ESboard · Arena Simulation (MVP1)</h2>
+        <div class="muted" data-i18n="subtitle">
+          新增：跨游戏/跨领域对战（例：T1 vs Team Spirit）。输出为“娱乐 + 可解释分析”，非真实比赛预测。
+        </div>
+      </div>
 
-    <div id="userArea" class="userArea">
-      <button id="loginBtn" class="pill">登录</button>
+      <!-- 右边：按钮区 -->
+      <div class="topbar-right">
+        <div class="lang">
+          <button id="btnZh" type="button">中文</button>
+          <button id="btnEn" type="button">EN</button>
+        </div>
 
-      <button id="userBtn" class="pill" style="display:none;">
-        👤 <span id="usernameText"></span>
-      </button>
+        <div id="userArea" class="userArea">
+          <button id="loginBtn" class="pill" type="button">登录</button>
 
-      <div id="userMenu" class="userMenu">
-        <div id="logoutBtn" class="userMenuItem">退出登录</div>
+          <button id="userBtn" class="pill" type="button" style="display:none;">
+            👤 <span id="usernameText"></span>
+          </button>
+
+          <div id="userMenu" class="userMenu">
+            <div id="logoutBtn" class="userMenuItem">退出登录</div>
+          </div>
+        </div>
+
+        <div class="pill">Points: <span id="points">0</span></div>
       </div>
     </div>
 
-    <div class="pill">Points: <span id="points">0</span></div>
-  </div>
-</div>
+    <!-- ===== 页面 1：Arena ===== -->
+    <div id="page-arena" class="page active">
+      <div class="card">
+        <h3 data-i18n="input">Input</h3>
 
-
-    <div style="display:flex; gap:10px; align-items:center;">
-<div class="lang">
-  <button id="btnZh" type="button">中文</button>
-  <button id="btnEn" type="button">EN</button>
-</div>
-
-<!-- 登录区域 -->
-<div id="userArea" style="position:relative;">
-  <button id="loginBtn" class="pill">登录</button>
-
-  <button id="userBtn" class="pill" style="display:none;">
-    👤 <span id="usernameText"></span>
-  </button>
-
-  <!-- 下拉菜单 -->
-  <div id="userMenu" style="
-    display:none;
-    position:absolute;
-    right:0;
-    top:42px;
-    background:#fff;
-    border:1px solid #ddd;
-    border-radius:8px;
-    min-width:120px;
-    box-shadow:0 6px 20px rgba(0,0,0,.08);
-    z-index:999;
-  ">
-    <div id="logoutBtn" style="
-      padding:10px;
-      cursor:pointer;
-      text-align:center;
-    ">退出登录</div>
-  </div>
-</div>
-
-<div class="pill">Points: <span id="points">0</span></div>
-
-
-  <!-- ===== 页面 1：Arena（你原来的内容全在这） ===== -->
-  <div id="page-arena" class="page active">
-    <div class="card">
-      <h3 data-i18n="input">Input</h3>
-
-      <div class="row">
-        <div>
-          <label data-i18n="mode">Mode</label>
-          <select id="mode">
-            <option value="same" data-i18n="mode_same">Same Game (LoL vs LoL / CS2 vs CS2)</option>
-            <option value="arena" selected data-i18n="mode_cross">Cross-Game Arena (跨领域)</option>
-          </select>
-        </div>
-
-        <div>
-          <label data-i18n="bo">BO</label>
-          <select id="bo">
-            <option value="1">BO1</option>
-            <option value="3" selected>BO3</option>
-            <option value="5">BO5</option>
-          </select>
-        </div>
-
-        <div class="muted" style="max-width:520px;" data-i18n="arena_tip">
-          Arena 模式会把不同游戏映射到统一属性面板（Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat）。
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label data-i18n="teamA_game">Team A game</label>
-          <select id="teamAGame">
-            <option value="lol" selected>LoL</option>
-            <option value="cs">CS2</option>
-          </select>
-        </div>
-        <div>
-          <label data-i18n="teamA_name">Team A name</label>
-          <input id="teamAName" placeholder="e.g. T1" />
-        </div>
-        <div>
-          <label data-i18n="teamA_last5">Team A last 5 (W/L)</label>
-          <input id="teamALast5" placeholder="e.g. W,W,W,L,W or WWLWL" />
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label data-i18n="teamB_game">Team B game</label>
-          <select id="teamBGame">
-            <option value="lol">LoL</option>
-            <option value="cs" selected>CS2</option>
-          </select>
-        </div>
-        <div>
-          <label data-i18n="teamB_name">Team B name</label>
-          <input id="teamBName" placeholder="e.g. Team Spirit" />
-        </div>
-        <div>
-          <label data-i18n="teamB_last5">Team B last 5 (W/L)</label>
-          <input id="teamBLast5" placeholder="e.g. L,W,L,W,L or LWLWL" />
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:16px;">
-        <button class="btn" id="btnGen" data-i18n="gen">Generate Simulation</button>
-        <button class="btn2" id="btnReset" data-i18n="reset_points">Reset Points</button>
-        <span id="status" class="muted"></span>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 data-i18n="output">Output</h3>
-      <div id="outputEmpty" class="muted" data-i18n="output_empty">还没有输出。请填写队伍并点击 Generate。</div>
-
-      <div id="outputWrap" style="display:none;">
-        <div class="row" style="justify-content:space-between;">
+        <div class="row">
           <div>
-            <div class="big" id="outMatchTitle"></div>
-            <div class="muted" id="outModeNote"></div>
+            <label data-i18n="mode">Mode</label>
+            <select id="mode">
+              <option value="same" data-i18n="mode_same">Same Game (LoL vs LoL / CS2 vs CS2)</option>
+              <option value="arena" selected data-i18n="mode_cross">Cross-Game Arena (跨领域)</option>
+            </select>
           </div>
-          <div class="statbox" style="min-width:280px;">
-            <div class="muted" data-i18n="winprob">Win Probability</div>
-            <div class="big"><span id="outWinA">50</span>% - <span id="outWinB">50</span>%</div>
-            <div class="muted" id="outWinnerText"></div>
-          </div>
-        </div>
 
-        <h4 style="margin-top:14px;" data-i18n="panel">Universal Attribute Panel</h4>
-        <div class="grid2">
-          <div class="statbox">
-            <div class="big" id="outTeamAName">Team A</div>
-            <div class="muted"><span id="outTeamAGame"></span></div>
-            <div id="outStatsA"></div>
+          <div>
+            <label data-i18n="bo">BO</label>
+            <select id="bo">
+              <option value="1">BO1</option>
+              <option value="3" selected>BO3</option>
+              <option value="5">BO5</option>
+            </select>
           </div>
-          <div class="statbox">
-            <div class="big" id="outTeamBName">Team B</div>
-            <div class="muted"><span id="outTeamBGame"></span></div>
-            <div id="outStatsB"></div>
+
+          <div class="muted" style="max-width:520px;" data-i18n="arena_tip">
+            Arena 模式会把不同游戏映射到统一属性面板（Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat）。
           </div>
         </div>
 
-        <h4 style="margin-top:14px;" data-i18n="reasons">Reasons</h4>
-        <ul id="outReasons"></ul>
-
-        <h4 data-i18n="timeline">Timeline</h4>
-        <div class="timeline" id="outTimeline"></div>
-
-        <h4 data-i18n="rawjson">Raw JSON</h4>
-        <pre id="outJson"></pre>
-
-        <p class="muted" data-i18n="disclaimer">
-          Disclaimer: Arena simulation is for analysis & entertainment only. Not betting advice.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== 页面 2：赛程 ===== -->
-  <div id="page-schedule" class="page">
-    <div class="card">
-      <h3 data-i18n="schedule">Schedule</h3>
-      <div class="muted" data-i18n="schedule_tip">这里之后可以接后端/数据库，展示真实赛事日程。</div>
-      <div style="margin-top:12px;">
-        <div class="pill">Jan 10 · T1 vs Team Spirit</div>
-        <div class="pill">Jan 11 · G2 vs Gen.G</div>
-        <div class="pill">Jan 12 · FaZe vs NAVI</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== 页面 3：排行榜 ===== -->
-  <div id="page-ranking" class="page">
-    <div class="card">
-      <h3 data-i18n="ranking">Rankings</h3>
-      <div class="muted" data-i18n="ranking_tip">示例榜单（后续你可以用你的算法/积分系统替换）。</div>
-      <div style="margin-top:12px;">
-        <div class="pill">#1 T1 · 36 pts</div>
-        <div class="pill">#2 Team Spirit · 34 pts</div>
-        <div class="pill">#3 Gen.G · 31 pts</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== 页面 4：个人资料 ===== -->
-  <div id="page-profile" class="page">
-    <div class="card">
-      <h3 data-i18n="profile">Profile</h3>
-      <div class="muted" data-i18n="profile_tip">先做本地资料 localStorage，后面再接登录/后端。</div>
-
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label data-i18n="pf_name">Name</label>
-          <input id="pfName" placeholder="Your name" />
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label data-i18n="teamA_game">Team A game</label>
+            <select id="teamAGame">
+              <option value="lol" selected>LoL</option>
+              <option value="cs">CS2</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="teamA_name">Team A name</label>
+            <input id="teamAName" placeholder="e.g. T1" />
+          </div>
+          <div>
+            <label data-i18n="teamA_last5">Team A last 5 (W/L)</label>
+            <input id="teamALast5" placeholder="e.g. W,W,W,L,W or WWLWL" />
+          </div>
         </div>
-        <div>
-          <label data-i18n="pf_team">Favorite Team</label>
-          <input id="pfTeam" placeholder="e.g. T1" />
+
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label data-i18n="teamB_game">Team B game</label>
+            <select id="teamBGame">
+              <option value="lol">LoL</option>
+              <option value="cs" selected>CS2</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="teamB_name">Team B name</label>
+            <input id="teamBName" placeholder="e.g. Team Spirit" />
+          </div>
+          <div>
+            <label data-i18n="teamB_last5">Team B last 5 (W/L)</label>
+            <input id="teamBLast5" placeholder="e.g. L,W,L,W,L or LWLWL" />
+          </div>
         </div>
-        <div>
-          <button class="btn" id="pfSave" data-i18n="pf_save">Save</button>
+
+        <div class="row" style="margin-top:16px;">
+          <button class="btn" id="btnGen" data-i18n="gen" type="button">Generate Simulation</button>
+          <button class="btn2" id="btnReset" data-i18n="reset_points" type="button">Reset Points</button>
+          <span id="status" class="muted"></span>
         </div>
-        <span id="pfStatus" class="muted"></span>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="output">Output</h3>
+        <div id="outputEmpty" class="muted" data-i18n="output_empty">还没有输出。请填写队伍并点击 Generate。</div>
+
+        <div id="outputWrap" style="display:none;">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div class="big" id="outMatchTitle"></div>
+              <div class="muted" id="outModeNote"></div>
+            </div>
+            <div class="statbox" style="min-width:280px;">
+              <div class="muted" data-i18n="winprob">Win Probability</div>
+              <div class="big"><span id="outWinA">50</span>% - <span id="outWinB">50</span>%</div>
+              <div class="muted" id="outWinnerText"></div>
+            </div>
+          </div>
+
+          <h4 style="margin-top:14px;" data-i18n="panel">Universal Attribute Panel</h4>
+          <div class="grid2">
+            <div class="statbox">
+              <div class="big" id="outTeamAName">Team A</div>
+              <div class="muted"><span id="outTeamAGame"></span></div>
+              <div id="outStatsA"></div>
+            </div>
+            <div class="statbox">
+              <div class="big" id="outTeamBName">Team B</div>
+              <div class="muted"><span id="outTeamBGame"></span></div>
+              <div id="outStatsB"></div>
+            </div>
+          </div>
+
+          <h4 style="margin-top:14px;" data-i18n="reasons">Reasons</h4>
+          <ul id="outReasons"></ul>
+
+          <h4 data-i18n="timeline">Timeline</h4>
+          <div class="timeline" id="outTimeline"></div>
+
+          <h4 data-i18n="rawjson">Raw JSON</h4>
+          <pre id="outJson"></pre>
+
+          <p class="muted" data-i18n="disclaimer">
+            Disclaimer: Arena simulation is for analysis & entertainment only. Not betting advice.
+          </p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ===== 底部导航 ===== -->
+    <!-- ===== 页面 2：赛程 ===== -->
+    <div id="page-schedule" class="page">
+      <div class="card">
+        <h3 data-i18n="schedule">Schedule</h3>
+        <div class="muted" data-i18n="schedule_tip">这里之后可以接后端/数据库，展示真实赛事日程。</div>
+        <div style="margin-top:12px;">
+          <div class="pill">Jan 10 · T1 vs Team Spirit</div>
+          <div class="pill">Jan 11 · G2 vs Gen.G</div>
+          <div class="pill">Jan 12 · FaZe vs NAVI</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 页面 3：排行榜 ===== -->
+    <div id="page-ranking" class="page">
+      <div class="card">
+        <h3 data-i18n="ranking">Rankings</h3>
+        <div class="muted" data-i18n="ranking_tip">示例榜单（后续你可以用你的算法/积分系统替换）。</div>
+        <div style="margin-top:12px;">
+          <div class="pill">#1 T1 · 36 pts</div>
+          <div class="pill">#2 Team Spirit · 34 pts</div>
+          <div class="pill">#3 Gen.G · 31 pts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 页面 4：个人资料 ===== -->
+    <div id="page-profile" class="page">
+      <div class="card">
+        <h3 data-i18n="profile">Profile</h3>
+        <div class="muted" data-i18n="profile_tip">先做本地资料 localStorage，后面再接登录/后端。</div>
+
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label data-i18n="pf_name">Name</label>
+            <input id="pfName" placeholder="Your name" />
+          </div>
+          <div>
+            <label data-i18n="pf_team">Favorite Team</label>
+            <input id="pfTeam" placeholder="e.g. T1" />
+          </div>
+          <div>
+            <button class="btn" id="pfSave" data-i18n="pf_save" type="button">Save</button>
+          </div>
+          <span id="pfStatus" class="muted"></span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <!-- ===== 底部导航（固定底部，必须在 container 外） ===== -->
   <div class="bottomnav">
     <a class="tab active" href="#arena" data-route="arena">
       <div class="icon">⚔️</div>
@@ -330,6 +329,7 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
 
 
