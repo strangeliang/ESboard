@@ -78,16 +78,42 @@
     </div>
 
     <div style="display:flex; gap:10px; align-items:center;">
-      <div class="lang">
-        <button id="btnZh" type="button">中文</button>
-        <button id="btnEn" type="button">EN</button>
-      </div>
-       <button id="loginBtn" class="pill">
-    登录
+<div class="lang">
+  <button id="btnZh" type="button">中文</button>
+  <button id="btnEn" type="button">EN</button>
+</div>
+
+<!-- 登录区域 -->
+<div id="userArea" style="position:relative;">
+  <button id="loginBtn" class="pill">登录</button>
+
+  <button id="userBtn" class="pill" style="display:none;">
+    👤 <span id="usernameText"></span>
   </button>
-      <div class="pill">Points: <span id="points">0</span></div>
-    </div>
+
+  <!-- 下拉菜单 -->
+  <div id="userMenu" style="
+    display:none;
+    position:absolute;
+    right:0;
+    top:42px;
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:8px;
+    min-width:120px;
+    box-shadow:0 6px 20px rgba(0,0,0,.08);
+    z-index:999;
+  ">
+    <div id="logoutBtn" style="
+      padding:10px;
+      cursor:pointer;
+      text-align:center;
+    ">退出登录</div>
   </div>
+</div>
+
+<div class="pill">Points: <span id="points">0</span></div>
+
 
   <!-- ===== 页面 1：Arena（你原来的内容全在这） ===== -->
   <div id="page-arena" class="page active">
@@ -279,4 +305,5 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
