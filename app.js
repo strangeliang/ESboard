@@ -5,16 +5,21 @@
 // - Bottom tabs: #arena #schedule #ranking #profile
 // - Language switch: zh/en (saved)
 // - Profile saved to localStorage
+// - Login UI: loginBtn -> userBtn + dropdown logout (localStorage)
 
 console.log("[ESboard] app.js loaded");
 
 // ===============================
-// Points
+// LocalStorage Keys
 // ===============================
 const LS_KEY_POINTS = "esboard_points_v1";
 const LS_LANG = "esboard_lang_v1";
 const LS_PROFILE = "esboard_profile_v1";
+const LS_USER = "esboard_user";
 
+// ===============================
+// Points
+// ===============================
 function getPoints() {
   const v = localStorage.getItem(LS_KEY_POINTS);
   const n = Number(v);
@@ -88,19 +93,14 @@ function clamp(n, a, b) {
 // ===============================
 // Build team profile
 // ===============================
-function buildProfile({ name, game, last5 }) {
+function buildTeamProfile({ name, game, last5 }) {
   const base =
     game === "lol"
       ? { mechanical: 78, iq: 82, teamwork: 84, clutch: 78, adapt: 80, strat: 84 }
       : { mechanical: 82, iq: 78, teamwork: 80, clutch: 82, adapt: 78, strat: 80 };
 
   const seed = hashString(`${name}|${game}`);
-  const r1 = seeded01(seed + 1);
-  const r2 = seeded01(seed + 2);
-  const r3 = seeded01(seed + 3);
-  const r4 = seeded01(seed + 4);
-  const r5 = seeded01(seed + 5);
-  const r6 = seeded01(seed + 6);
+  const r = (k) => seeded01(seed + k);
 
   // Small personality variance per team (±6)
   const v = (x) => (x - 0.5) * 12;
@@ -111,12 +111,12 @@ function buildProfile({ name, game, last5 }) {
   return {
     name,
     game,
-    mechanical: clamp(Math.round(base.mechanical + v(r1)), 40, 99),
-    iq: clamp(Math.round(base.iq + v(r2)), 40, 99),
-    teamwork: clamp(Math.round(base.teamwork + v(r3)), 40, 99),
-    clutch: clamp(Math.round(base.clutch + v(r4)), 40, 99),
-    adapt: clamp(Math.round(base.adapt + v(r5)), 40, 99),
-    strat: clamp(Math.round(base.strat + v(r6)), 40, 99),
+    mechanical: clamp(Math.round(base.mechanical + v(r(1))), 40, 99),
+    iq: clamp(Math.round(base.iq + v(r(2))), 40, 99),
+    teamwork: clamp(Math.round(base.teamwork + v(r(3))), 40, 99),
+    clutch: clamp(Math.round(base.clutch + v(r(4))), 40, 99),
+    adapt: clamp(Math.round(base.adapt + v(r(5))), 40, 99),
+    strat: clamp(Math.round(base.strat + v(r(6))), 40, 99),
     form: clamp(form100, 0, 100),
     last5: last5.join("") || "N/A",
   };
@@ -266,10 +266,7 @@ function renderStats(containerId, p) {
     ["Strat", p.strat],
   ];
   el.innerHTML = rows
-    .map(
-      ([k, v]) =>
-        `<div class="statrow"><div>${k}</div><div><b>${v}</b></div></div>`
-    )
+    .map(([k, v]) => `<div class="statrow"><div>${k}</div><div><b>${v}</b></div></div>`)
     .join("");
 }
 
@@ -341,7 +338,7 @@ function renderOutput(data) {
 }
 
 // ===============================
-// Shell: i18n + Tabs + Profile
+// i18n + Tabs + Profile
 // ===============================
 const I18N = {
   zh: {
@@ -391,8 +388,7 @@ const I18N = {
   },
   en: {
     title: "ESboard · Arena Simulation (MVP1)",
-    subtitle:
-      "New: cross-game arena battles (e.g., T1 vs Team Spirit). Entertainment + explainable analysis, NOT real match prediction.",
+    subtitle: "New: cross-game arena battles (e.g., T1 vs Team Spirit). Entertainment + explainable analysis, NOT real match prediction.",
     input: "Input",
     output: "Output",
     output_empty: "No output yet. Fill teams and click Generate.",
@@ -407,8 +403,7 @@ const I18N = {
     bo: "BO",
     mode_same: "Same Game (LoL vs LoL / CS2 vs CS2)",
     mode_cross: "Cross-Game Arena",
-    arena_tip:
-      "Arena maps different games into a unified attribute panel (Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat).",
+    arena_tip: "Arena maps different games into a unified attribute panel (Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat).",
 
     teamA_game: "Team A game",
     teamA_name: "Team A name",
@@ -485,7 +480,6 @@ function showPage(route) {
     a.classList.toggle("active", a.getAttribute("data-route") === route);
   });
 
-  // 页面切换后刷新一下 points（更稳）
   renderPoints();
 }
 function currentRoute() {
@@ -527,16 +521,70 @@ function initProfileUI() {
 }
 
 // ===============================
+// Login UI (loginBtn -> userBtn + dropdown logout)
+// ===============================
+function renderUserUI() {
+  const loginBtn = document.getElementById("loginBtn");
+  const userBtn = document.getElementById("userBtn");
+  const usernameText = document.getElementById("usernameText");
+  const userMenu = document.getElementById("userMenu");
+
+  const u = localStorage.getItem(LS_USER) || "";
+  if (!loginBtn || !userBtn || !usernameText) return;
+
+  if (u) {
+    loginBtn.style.display = "none";
+    userBtn.style.display = "inline-block";
+    usernameText.textContent = u;
+  } else {
+    loginBtn.style.display = "inline-block";
+    userBtn.style.display = "none";
+    usernameText.textContent = "";
+    userMenu?.classList.remove("show");
+  }
+}
+
+function initLoginUI() {
+  const loginBtn = document.getElementById("loginBtn");
+  const userBtn = document.getElementById("userBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  loginBtn?.addEventListener("click", () => {
+    const name = prompt("请输入你的用户名 / Enter username:");
+    if (!name) return;
+    localStorage.setItem(LS_USER, name.trim());
+    renderUserUI();
+  });
+
+  userBtn?.addEventListener("click", () => {
+    document.getElementById("userMenu")?.classList.toggle("show");
+  });
+
+  logoutBtn?.addEventListener("click", () => {
+    localStorage.removeItem(LS_USER);
+    renderUserUI();
+  });
+
+  // 点击外部关闭菜单
+  document.addEventListener("click", (e) => {
+    const area = document.getElementById("userArea");
+    const menu = document.getElementById("userMenu");
+    if (!area || !menu) return;
+    if (!area.contains(e.target)) menu.classList.remove("show");
+  });
+
+  renderUserUI();
+}
+
+// ===============================
 // Main init (ONE entry)
 // ===============================
 function initApp() {
   console.log("[ESboard] initApp");
 
   // Language buttons
-  const zhBtn = document.getElementById("btnZh");
-  const enBtn = document.getElementById("btnEn");
-  if (zhBtn) zhBtn.addEventListener("click", () => setLang("zh"));
-  if (enBtn) enBtn.addEventListener("click", () => setLang("en"));
+  document.getElementById("btnZh")?.addEventListener("click", () => setLang("zh"));
+  document.getElementById("btnEn")?.addEventListener("click", () => setLang("en"));
 
   // Router
   window.addEventListener("hashchange", () => showPage(currentRoute()));
@@ -546,16 +594,15 @@ function initApp() {
   showPage(currentRoute());
   initProfileUI();
   renderPoints();
+  initLoginUI();
 
-  // IMPORTANT: Use event delegation so it still works even if DOM changes
+  // Event delegation for Arena buttons
   document.addEventListener("click", (e) => {
     const tEl = e.target;
     if (!tEl) return;
 
     // Generate
     if (tEl.id === "btnGen") {
-      console.log("[ESboard] btnGen clicked");
-
       const modeEl = document.getElementById("mode");
       const boEl = document.getElementById("bo");
       const aGameEl = document.getElementById("teamAGame");
@@ -565,7 +612,6 @@ function initApp() {
       const aL5El = document.getElementById("teamALast5");
       const bL5El = document.getElementById("teamBLast5");
 
-      // If any missing, fail gracefully
       if (!modeEl || !boEl || !aGameEl || !bGameEl || !aNameEl || !bNameEl || !aL5El || !bL5El) {
         setStatus("页面元素缺失（ID 不匹配）。请确认 index.html 的 id 与 app.js 一致。", "warn");
         return;
@@ -590,8 +636,8 @@ function initApp() {
         return;
       }
 
-      const teamA = buildProfile({ name: teamAName, game: teamAGame, last5: teamAL5 });
-      const teamB = buildProfile({ name: teamBName, game: teamBGame, last5: teamBL5 });
+      const teamA = buildTeamProfile({ name: teamAName, game: teamAGame, last5: teamAL5 });
+      const teamB = buildTeamProfile({ name: teamBName, game: teamBGame, last5: teamBL5 });
 
       const result = simulate({ mode, bo, teamA, teamB });
       renderOutput(result);
@@ -603,7 +649,6 @@ function initApp() {
 
     // Reset points
     if (tEl.id === "btnReset") {
-      console.log("[ESboard] btnReset clicked");
       setPoints(0);
       setStatus("Points reset to 0.", "ok");
       return;
@@ -617,136 +662,7 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
-// ===============================
-// ESboard MVP1.1
-// Win Probability + Explanation Panel
-// ===============================
-(() => {
-  function calcWinProb(teamA, teamB) {
-    // 基础胜率
-    let base = 50;
 
-    // 最近战绩影响（W=+4, L=-4）
-    const scoreLast5 = (arr) =>
-      arr.reduce((s, x) => s + (x === "W" ? 4 : -4), 0);
-
-    base += scoreLast5(teamA.last5 || []);
-    base -= scoreLast5(teamB.last5 || []);
-
-    // BO 场数微调
-    if (teamA.bo === "BO5") base += 2;
-    if (teamB.bo === "BO5") base -= 2;
-
-    // clamp
-    return Math.max(5, Math.min(95, base));
-  }
-
-  function explain(teamA, teamB, winProb) {
-    const reasons = [];
-
-    reasons.push(
-      `Recent form: ${teamA.name} (${teamA.last5.join("")}) vs ${teamB.name} (${teamB.last5.join("")})`
-    );
-
-    if (winProb > 60) {
-      reasons.push(`${teamA.name} shows a stronger recent momentum.`);
-    } else if (winProb < 40) {
-      reasons.push(`${teamB.name} has a competitive advantage recently.`);
-    } else {
-      reasons.push(`Both teams show relatively balanced recent performance.`);
-    }
-
-    reasons.push(`Estimated win probability is ${winProb}%.`);
-
-    return reasons;
-  }
-
-  // Hook into existing simulate()
-  const _oldSimulate = window.simulate;
-
-  window.simulate = function (payload) {
-    const result = _oldSimulate(payload);
-
-    try {
-      const teamA = {
-        name: payload.teamA.name,
-        last5: payload.teamA.last5 || [],
-        bo: payload.bo,
-      };
-      const teamB = {
-        name: payload.teamB.name,
-        last5: payload.teamB.last5 || [],
-        bo: payload.bo,
-      };
-
-      const winProb = calcWinProb(teamA, teamB);
-      const reasons = explain(teamA, teamB, winProb);
-
-      result.winProb = winProb;
-      result.reasons = reasons;
-    } catch (e) {
-      console.warn("[ESboard] winProb calc failed", e);
-    }
-
-    return result;
-  };
-
-  // Extend renderOutput
-  const _oldRender = window.renderOutput;
-
-  window.renderOutput = function (result) {
-    _oldRender(result);
-
-    if (!result || result.winProb == null) return;
-
-    const out = document.getElementById("output");
-    if (!out) return;
-
-    const box = document.createElement("div");
-    box.style.marginTop = "12px";
-    box.style.padding = "10px";
-    box.style.border = "1px solid #ddd";
-    box.style.borderRadius = "8px";
-
-    box.innerHTML = `
-      <strong>Win Probability</strong>: ${result.winProb}%
-      <ul>
-        ${result.reasons.map((r) => `<li>${r}</li>`).join("")}
-      </ul>
-    `;
-
-    out.appendChild(box);
-  };
-})();
-// ===============================
-// Simple Login (MVP - Local Only)
-// ===============================
-
-function initLogin() {
-  const btn = document.getElementById("loginBtn");
-  if (!btn) return;
-
-  // 如果之前登录过
-  const savedUser = localStorage.getItem("esboard_user");
-  if (savedUser) {
-    btn.textContent = savedUser;
-  }
-
-  btn.addEventListener("click", () => {
-    const name = prompt("请输入你的用户名 / Enter username:");
-    if (!name) return;
-
-    localStorage.setItem("esboard_user", name);
-    btn.textContent = name;
-  });
-}
-
-// 确保 DOM ready 后执行
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initLogin);
-} else {
-  initLogin();
-}
 
 
 
