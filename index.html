@@ -69,13 +69,38 @@
 
 <body>
   <!-- ===== 顶部栏：加了语言切换 ===== -->
-  <div class="topbar">
-    <div>
-      <h2 style="margin:0;" data-i18n="title">ESboard · Arena Simulation (MVP1)</h2>
-      <div class="muted" data-i18n="subtitle">
-        新增：跨游戏/跨领域对战（例：T1 vs Team Spirit）。输出为“娱乐 + 可解释分析”，非真实比赛预测。
+<div class="topbar">
+  <!-- 左边：标题 -->
+  <div class="topbar-left">
+    <h2 style="margin:0;" data-i18n="title">ESboard · Arena Simulation (MVP1)</h2>
+    <div class="muted" data-i18n="subtitle">
+      新增：跨游戏/跨领域对战（例：T1 vs Team Spirit）。输出为“娱乐 + 可解释分析”，非真实比赛预测。
+    </div>
+  </div>
+
+  <!-- 右边：按钮区 -->
+  <div class="topbar-right">
+    <div class="lang">
+      <button id="btnZh" type="button">中文</button>
+      <button id="btnEn" type="button">EN</button>
+    </div>
+
+    <div id="userArea" class="userArea">
+      <button id="loginBtn" class="pill">登录</button>
+
+      <button id="userBtn" class="pill" style="display:none;">
+        👤 <span id="usernameText"></span>
+      </button>
+
+      <div id="userMenu" class="userMenu">
+        <div id="logoutBtn" class="userMenuItem">退出登录</div>
       </div>
     </div>
+
+    <div class="pill">Points: <span id="points">0</span></div>
+  </div>
+</div>
+
 
     <div style="display:flex; gap:10px; align-items:center;">
 <div class="lang">
@@ -305,5 +330,6 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
 
