@@ -1,1 +1,25 @@
+<script>
+  (function () {
+    const path = location.pathname;
+
+    // 移除全部 active
+    document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+
+    // 根据当前路径，找到对应链接并加 active
+    // 兼容 /dashboard/ 和 /dashboard/index.html
+    const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+
+    const p = normalize(path);
+
+    let selector = '';
+    if (p === "/dashboard/" || p === "/dashboard/index.html") {
+      selector = '.menu a[href="/dashboard/"]';
+    } else {
+      selector = `.menu a[href="${p}"]`;
+    }
+
+    const activeLink = document.querySelector(selector);
+    if (activeLink) activeLink.classList.add("active");
+  })();
+</script>
 
