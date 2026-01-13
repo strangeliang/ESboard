@@ -1,1 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESboard · Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./dashboard.css" />
+</head>
+
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="logo">ESboard</div>
+      <nav class="menu">
+        <a href="/dashboard/">Dashboard</a>
+        <a href="/dashboard/simulator.html">Simulator</a>
+        <a href="/dashboard/history.html">History</a>
+        <a href="/dashboard/points.html">Points</a>
+        <a href="/dashboard/settings.html">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <h1>Settings</h1>
+        <div class="user">👤</div>
+      </header>
+
+      <section class="content">
+        <div class="card full">
+          <h3>Settings</h3>
+          <p class="muted">Later you can put language, theme, account settings here.</p>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    (function () {
+      const path = location.pathname;
+      document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+
+      const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+      const p = normalize(path);
+
+      let selector = (p === "/dashboard/" || p === "/dashboard/index.html")
+        ? '.menu a[href="/dashboard/"]'
+        : `.menu a[href="${p}"]`;
+
+      const activeLink = document.querySelector(selector);
+      if (activeLink) activeLink.classList.add("active");
+    })();
+  </script>
+
+  <script src="../app.js"></script>
+</body>
+</html>
 
