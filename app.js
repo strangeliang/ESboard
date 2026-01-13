@@ -1,4 +1,4 @@
-// ESboard MVP1 - app.js (Dashboard multi-page compatible)
+// ESboard MVP1 - app.js (Dashboard multi-page compatible + Local History)
 console.log("[ESboard] app.js loaded");
 
 // ===============================
@@ -7,6 +7,7 @@ console.log("[ESboard] app.js loaded");
 const LS_KEY_POINTS = "esboard_points_v1";
 const LS_LANG = "esboard_lang_v1";
 const LS_PROFILE = "esboard_profile_v1";
+const LS_KEY_HISTORY = "esboard_history_v1"; // ✅ NEW: history
 
 // ===============================
 // ✅ Supabase Config (前端用 publishable/anon key)
@@ -19,7 +20,6 @@ function getSupabase() {
   if (supabaseClient) return supabaseClient;
 
   if (!window.supabase) {
-    // 不是所有页面都需要 supabase（比如 simulator）
     console.warn("[ESboard] supabase-js not loaded. (Only needed on auth pages)");
     return null;
   }
@@ -39,6 +39,16 @@ function getSupabase() {
 }
 
 // ===============================
+// Helpers
+// ===============================
+function $(id) {
+  return document.getElementById(id);
+}
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
+
+// ===============================
 // Points
 // ===============================
 function getPoints() {
@@ -47,7 +57,7 @@ function getPoints() {
   return Number.isFinite(n) ? n : 0;
 }
 function renderPoints() {
-  const el = document.getElementById("points");
+  const el = $("points");
   if (el) el.textContent = String(getPoints());
 }
 function setPoints(n) {
@@ -56,22 +66,39 @@ function setPoints(n) {
 }
 
 // ===============================
-// Status
+// Status (Simulator only)
 // ===============================
 function setStatus(text, kind = "muted") {
-  const el = document.getElementById("status");
+  const el = $("status");
   if (!el) return;
   el.className = kind === "ok" ? "ok" : kind === "warn" ? "warn" : "muted";
   el.textContent = text || "";
 }
 
 // ===============================
-// Helpers
+// ✅ History (localStorage)
 // ===============================
-function $(id) {
-  return document.getElementById(id);
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_HISTORY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+function saveHistory(list) {
+  localStorage.setItem(LS_KEY_HISTORY, JSON.stringify(list));
+}
+function pushHistory(item) {
+  const list = loadHistory();
+  list.unshift(item);             // 新的放最上面
+  if (list.length > 50) list.length = 50; // 最多50条
+  saveHistory(list);
 }
 
+// ===============================
+// Last5 / Form
+// ===============================
 function parseLast5(str) {
   const s = (str || "").trim().toUpperCase();
   if (!s) return [];
@@ -108,9 +135,6 @@ function seeded01(seed) {
   x ^= x << 5;
   x >>>= 0;
   return (x >>> 0) / 4294967296;
-}
-function clamp(n, a, b) {
-  return Math.max(a, Math.min(b, n));
 }
 
 // ===============================
@@ -272,7 +296,7 @@ function simulate({ mode, bo, teamA, teamB }) {
 }
 
 // ===============================
-// Render output
+// Render output (Simulator only)
 // ===============================
 function renderStats(containerId, p) {
   const el = $(containerId);
@@ -362,15 +386,6 @@ function renderOutput(data) {
 // ===============================
 // i18n (只在页面存在 data-i18n 时生效)
 // ===============================
-const I18N = {
-  zh: {
-    pf_saved: "已保存 ✅",
-  },
-  en: {
-    pf_saved: "Saved ✅",
-  },
-};
-
 function getLang() {
   const v = localStorage.getItem(LS_LANG);
   return v === "en" || v === "zh" ? v : "zh";
@@ -388,15 +403,9 @@ function applyLang() {
   if (zhBtn) zhBtn.classList.toggle("active", lang === "zh");
   if (enBtn) enBtn.classList.toggle("active", lang === "en");
 
-  // 只在存在 data-i18n 的页面才执行（避免 dashboard 多页报错）
   const nodes = document.querySelectorAll("[data-i18n]");
   if (!nodes.length) return;
-
-  nodes.forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    const val = (I18N[lang] && I18N[lang][key]) ? I18N[lang][key] : null;
-    if (val) el.textContent = val;
-  });
+  // 你现在多页面主要不靠 data-i18n，这里保留空实现，避免报错
 }
 
 // ===============================
@@ -467,7 +476,6 @@ function setAuthUI(session) {
 }
 
 async function initSupabaseAuthIfExists() {
-  // 只有页面上存在 auth 元素才初始化
   if (!$("authLoggedOut") && !$("authLoggedIn")) return;
 
   const supabase = getSupabase();
@@ -539,13 +547,11 @@ async function initSupabaseAuthIfExists() {
 function initSimulatorIfExists() {
   const btnGen = $("btnGen");
   const btnReset = $("btnReset");
-  if (!btnGen && !btnReset) return; // 不是模拟器页面
+  if (!btnGen && !btnReset) return;
 
-  // Lang buttons（存在才绑定）
   $("btnZh")?.addEventListener("click", () => setLang("zh"));
   $("btnEn")?.addEventListener("click", () => setLang("en"));
 
-  // Generate
   btnGen?.addEventListener("click", () => {
     const modeEl = $("mode");
     const boEl = $("bo");
@@ -586,11 +592,21 @@ function initSimulatorIfExists() {
     const result = simulate({ mode, bo, teamA, teamB });
     renderOutput(result);
 
+    // ✅ NEW: write history
+    pushHistory({
+      time: Date.now(),
+      title: `${result.teamA.name} vs ${result.teamB.name}`,
+      mode: result.mode,
+      bo: result.bo,
+      winner: result.winnerSide === "A" ? result.teamA.name : result.teamB.name,
+      winA: result.winProb.A,
+      winB: result.winProb.B,
+    });
+
     setPoints(getPoints() + 10);
     setStatus("Simulation generated. +10 points ✅", "ok");
   });
 
-  // Reset points
   btnReset?.addEventListener("click", () => {
     setPoints(0);
     setStatus("Points reset to 0.", "ok");
@@ -606,13 +622,11 @@ function initApp() {
   applyLang();
   renderPoints();
 
-  // 只有相关页面存在元素才初始化
   initSimulatorIfExists();
   initProfileUI();
   initSupabaseAuthIfExists();
 }
 
-// DOM ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initApp);
 } else {
