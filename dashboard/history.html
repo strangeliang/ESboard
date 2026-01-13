@@ -13,10 +13,11 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="logo">ESboard</div>
+
     <nav class="menu">
       <a href="/dashboard/">Dashboard</a>
       <a href="/dashboard/simulator.html">Simulator</a>
-      <a class="active" href="/dashboard/history.html">History</a>
+      <a href="/dashboard/history.html">History</a>
       <a href="/dashboard/points.html">Points</a>
       <a href="/dashboard/settings.html">Settings</a>
     </nav>
@@ -33,23 +34,117 @@
 
     <!-- Content -->
     <section class="content">
-
       <div class="card full">
         <h3>Simulation History</h3>
-        <p class="muted">
-          This page will show past simulations (future: from database).
+        <p class="muted" id="historyHint">
+          Past simulations saved in localStorage (esboard_history_v1).
         </p>
 
-        <ul style="margin-top:12px; line-height:1.8;">
-          <li>T1 vs Team Spirit · Win: T1 · +10 pts</li>
-          <li>navi vs FAZE · Win: navi · +10 pts</li>
-        </ul>
-      </div>
+        <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+          <button id="btnClearHistory" style="padding:8px 10px; border:1px solid #e5e7eb; background:#fff; border-radius:8px; cursor:pointer;">
+            Clear History
+          </button>
+          <span class="muted" id="historyCount"></span>
+        </div>
 
+        <ul id="historyList" style="margin-top:12px; line-height:1.9; padding-left:18px;"></ul>
+
+        <div id="historyEmpty" class="muted" style="margin-top:12px; display:none;">
+          No history yet. Go to Simulator and generate one.
+        </div>
+      </div>
     </section>
 
   </main>
 </div>
+
+<!-- ✅ app.js 放在 dashboard 目录里：/dashboard/app.js -->
+<script src="/dashboard/app.js"></script>
+
+<script>
+  (function () {
+    // ===== Sidebar active highlight (auto) =====
+    const path = location.pathname;
+    document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+
+    const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+    const p = normalize(path);
+
+    let selector = "";
+    if (p === "/dashboard/" || p === "/dashboard/index.html") {
+      selector = '.menu a[href="/dashboard/"]';
+    } else {
+      selector = `.menu a[href="${p}"]`;
+    }
+
+    const activeLink = document.querySelector(selector);
+    if (activeLink) activeLink.classList.add("active");
+
+    // ===== History render =====
+    const LS_KEY_HISTORY = "esboard_history_v1";
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(LS_KEY_HISTORY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function fmtTime(ms) {
+      try {
+        const d = new Date(ms);
+        return d.toLocaleString();
+      } catch {
+        return "";
+      }
+    }
+
+    function renderHistory() {
+      const listEl = document.getElementById("historyList");
+      const emptyEl = document.getElementById("historyEmpty");
+      const countEl = document.getElementById("historyCount");
+
+      const list = loadHistory();
+      if (countEl) countEl.textContent = list.length ? `Total: ${list.length}` : "";
+
+      if (!listEl || !emptyEl) return;
+
+      listEl.innerHTML = "";
+
+      if (!list.length) {
+        emptyEl.style.display = "block";
+        return;
+      }
+
+      emptyEl.style.display = "none";
+
+      list.forEach((it) => {
+        const li = document.createElement("li");
+
+        const title = it.title || "Match";
+        const winner = it.winner ? `Win: ${it.winner}` : "";
+        const mode = it.mode ? `Mode: ${it.mode}` : "";
+        const bo = it.bo ? `${it.bo}` : "";
+        const prob = (typeof it.winA === "number" && typeof it.winB === "number")
+          ? ` · ${it.winA}% - ${it.winB}%`
+          : "";
+
+        li.textContent = `${title} · ${winner}${prob} · ${mode} ${bo} · ${fmtTime(it.time)}`;
+        listEl.appendChild(li);
+      });
+    }
+
+    // Clear history
+    document.getElementById("btnClearHistory")?.addEventListener("click", () => {
+      localStorage.setItem(LS_KEY_HISTORY, JSON.stringify([]));
+      renderHistory();
+    });
+
+    renderHistory();
+  })();
+</script>
 
 </body>
 </html>
