@@ -1,25 +1,69 @@
-<script>
-  (function () {
-    const path = location.pathname;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESboard · Points</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./dashboard.css" />
+</head>
 
-    // 移除全部 active
-    document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+<body>
+  <div class="app">
 
-    // 根据当前路径，找到对应链接并加 active
-    // 兼容 /dashboard/ 和 /dashboard/index.html
-    const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+    <aside class="sidebar">
+      <div class="logo">ESboard</div>
+      <nav class="menu">
+        <a href="/dashboard/">Dashboard</a>
+        <a href="/dashboard/simulator.html">Simulator</a>
+        <a href="/dashboard/history.html">History</a>
+        <a href="/dashboard/points.html">Points</a>
+        <a href="/dashboard/settings.html">Settings</a>
+      </nav>
+    </aside>
 
-    const p = normalize(path);
+    <main class="main">
+      <header class="topbar">
+        <h1>Points</h1>
+        <div class="user">👤</div>
+      </header>
 
-    let selector = '';
-    if (p === "/dashboard/" || p === "/dashboard/index.html") {
-      selector = '.menu a[href="/dashboard/"]';
-    } else {
-      selector = `.menu a[href="${p}"]`;
-    }
+      <section class="content">
+        <div class="card full">
+          <h3>Your Points</h3>
+          <p class="muted">Current points (from localStorage):</p>
+          <div style="font-size:40px; font-weight:800; margin-top:10px;">
+            <span id="points">0</span>
+          </div>
 
-    const activeLink = document.querySelector(selector);
-    if (activeLink) activeLink.classList.add("active");
-  })();
-</script>
+          <div style="margin-top:14px;">
+            <button class="btn2" id="btnReset">Reset Points</button>
+            <span id="status" class="muted" style="margin-left:10px;"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    (function () {
+      const path = location.pathname;
+      document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+
+      const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+      const p = normalize(path);
+
+      let selector = (p === "/dashboard/" || p === "/dashboard/index.html")
+        ? '.menu a[href="/dashboard/"]'
+        : `.menu a[href="${p}"]`;
+
+      const activeLink = document.querySelector(selector);
+      if (activeLink) activeLink.classList.add("active");
+    })();
+  </script>
+
+  <script src="../app.js"></script>
+</body>
+</html>
+
 
