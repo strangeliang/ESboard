@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESboard · Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">ESboard</div>
+
+    <nav class="menu">
+      <a class="active">Dashboard</a>
+      <a>Simulator</a>
+      <a>History</a>
+      <a>Points</a>
+      <a>Settings</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <h1>Dashboard</h1>
+      <div class="user">👤</div>
+    </header>
+
+    <!-- Content -->
+    <section class="content">
+
+      <div class="card">
+        <h3>Input</h3>
+        <p>Choose teams and simulation options.</p>
+      </div>
+
+      <div class="card">
+        <h3>Result</h3>
+        <p>Win rate, outcome and summary.</p>
+      </div>
+
+      <div class="card full">
+        <h3>Explanation</h3>
+        <p>Detailed reasoning and timeline will appear here.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
