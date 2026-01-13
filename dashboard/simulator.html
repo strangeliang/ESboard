@@ -8,201 +8,194 @@
 </head>
 
 <body>
-<div class="app">
+  <div class="app">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="logo">ESboard</div>
-    <nav class="menu">
-<nav class="menu">
-  <a href="/dashboard/">Dashboard</a>
-  <a href="/dashboard/simulator.html">Simulator</a>
-  <a href="/dashboard/history.html">History</a>
-  <a href="/dashboard/points.html">Points</a>
-  <a href="/dashboard/settings.html">Settings</a>
-</nav>
-      <a href="/dashboard/history.html">History</a>
-      <a href="/dashboard/points.html">Points</a>
-      <a href="/dashboard/settings.html">Settings</a>
-    </nav>
-  </aside>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">ESboard</div>
 
-  <!-- Main -->
-  <main class="main">
+      <nav class="menu">
+        <a href="/dashboard/">Dashboard</a>
+        <a href="/dashboard/simulator.html">Simulator</a>
+        <a href="/dashboard/history.html">History</a>
+        <a href="/dashboard/points.html">Points</a>
+        <a href="/dashboard/settings.html">Settings</a>
+      </nav>
+    </aside>
 
-    <header class="topbar">
-      <h1>Simulator</h1>
-      <div class="user">👤</div>
-    </header>
+    <!-- Main -->
+    <main class="main">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <h1>Simulator</h1>
+        <div class="user">👤</div>
+      </header>
 
-    <section class="content">
+      <!-- Content -->
+      <section class="content">
 
-      <!-- Input -->
-      <div class="card full">
-        <div class="arena">
-          <div class="arena-head">
-            <div>
-              <h3>Input</h3>
-              <div class="muted">
-                Cross-game arena battles. Entertainment + explainable analysis.
-              </div>
-            </div>
-            <div class="arena-right">
-              <div class="lang">
-                <button id="btnZh" type="button">中文</button>
-                <button id="btnEn" type="button">EN</button>
-              </div>
-              <div class="pill">Points: <span id="points">0</span></div>
-            </div>
-          </div>
-
-          <!-- ===== 你原 page-arena 的 Input 表单：原封不动搬过来（id 保持不变） ===== -->
-          <div class="row" style="margin-top:12px;">
-            <div>
-              <label>Mode</label>
-              <select id="mode">
-                <option value="same">Same Game (LoL vs LoL / CS2 vs CS2)</option>
-                <option value="arena" selected>Cross-Game Arena (跨领域)</option>
-              </select>
-            </div>
-
-            <div>
-              <label>BO</label>
-              <select id="bo">
-                <option value="1">BO1</option>
-                <option value="3" selected>BO3</option>
-                <option value="5">BO5</option>
-              </select>
-            </div>
-
-            <div class="muted" style="max-width:520px;">
-              Arena 模式会把不同游戏映射到统一属性面板（Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat）。
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <div>
-              <label>Team A game</label>
-              <select id="teamAGame">
-                <option value="lol" selected>LoL</option>
-                <option value="cs">CS2</option>
-              </select>
-            </div>
-            <div>
-              <label>Team A name</label>
-              <input id="teamAName" placeholder="e.g. T1" />
-            </div>
-            <div>
-              <label>Team A last 5 (W/L)</label>
-              <input id="teamALast5" placeholder="e.g. W,W,W,L,W or WWLWL" />
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <div>
-              <label>Team B game</label>
-              <select id="teamBGame">
-                <option value="lol">LoL</option>
-                <option value="cs" selected>CS2</option>
-              </select>
-            </div>
-            <div>
-              <label>Team B name</label>
-              <input id="teamBName" placeholder="e.g. Team Spirit" />
-            </div>
-            <div>
-              <label>Team B last 5 (W/L)</label>
-              <input id="teamBLast5" placeholder="e.g. L,W,L,W,L or LWLWL" />
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:16px;">
-            <button class="btn" id="btnGen">Generate Simulation</button>
-            <button class="btn2" id="btnReset">Reset Points</button>
-            <span id="status" class="muted"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Output -->
-      <div class="card full">
-        <div class="arena">
-          <h3>Output</h3>
-          <div id="outputEmpty" class="muted">还没有输出。请填写队伍并点击 Generate。</div>
-
-          <div id="outputWrap" style="display:none;">
-            <div class="row" style="justify-content:space-between;">
+        <!-- Input -->
+        <div class="card full">
+          <div class="arena">
+            <div class="arena-head">
               <div>
-                <div class="big" id="outMatchTitle"></div>
-                <div class="muted" id="outModeNote"></div>
+                <h3>Input</h3>
+                <div class="muted">
+                  Cross-game arena battles. Entertainment + explainable analysis.
+                </div>
               </div>
-              <div class="statbox" style="min-width:280px;">
-                <div class="muted">Win Probability</div>
-                <div class="big"><span id="outWinA">50</span>% - <span id="outWinB">50</span>%</div>
-                <div class="muted" id="outWinnerText"></div>
-              </div>
-            </div>
 
-            <h4 style="margin-top:14px;">Universal Attribute Panel</h4>
-            <div class="grid2">
-              <div class="statbox">
-                <div class="big" id="outTeamAName">Team A</div>
-                <div class="muted"><span id="outTeamAGame"></span></div>
-                <div id="outStatsA"></div>
-              </div>
-              <div class="statbox">
-                <div class="big" id="outTeamBName">Team B</div>
-                <div class="muted"><span id="outTeamBGame"></span></div>
-                <div id="outStatsB"></div>
+              <div class="arena-right">
+                <div class="lang">
+                  <button id="btnZh" type="button">中文</button>
+                  <button id="btnEn" type="button">EN</button>
+                </div>
+                <div class="pill">Points: <span id="points">0</span></div>
               </div>
             </div>
 
-            <h4 style="margin-top:14px;">Reasons</h4>
-            <ul id="outReasons"></ul>
+            <!-- ===== 原 page-arena 的 Input 表单（id 保持不变）===== -->
+            <div class="row" style="margin-top:12px;">
+              <div>
+                <label>Mode</label>
+                <select id="mode">
+                  <option value="same">Same Game (LoL vs LoL / CS2 vs CS2)</option>
+                  <option value="arena" selected>Cross-Game Arena (跨领域)</option>
+                </select>
+              </div>
 
-            <h4>Timeline</h4>
-            <div class="timeline" id="outTimeline"></div>
+              <div>
+                <label>BO</label>
+                <select id="bo">
+                  <option value="1">BO1</option>
+                  <option value="3" selected>BO3</option>
+                  <option value="5">BO5</option>
+                </select>
+              </div>
 
-            <h4>Raw JSON</h4>
-            <pre id="outJson"></pre>
+              <div class="muted" style="max-width:520px;">
+                Arena 模式会把不同游戏映射到统一属性面板（Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat）。
+              </div>
+            </div>
 
-            <p class="muted">
-              Disclaimer: Arena simulation is for analysis & entertainment only. Not betting advice.
-            </p>
+            <div class="row" style="margin-top:12px;">
+              <div>
+                <label>Team A game</label>
+                <select id="teamAGame">
+                  <option value="lol" selected>LoL</option>
+                  <option value="cs">CS2</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Team A name</label>
+                <input id="teamAName" placeholder="e.g. T1" />
+              </div>
+
+              <div>
+                <label>Team A last 5 (W/L)</label>
+                <input id="teamALast5" placeholder="e.g. W,W,W,L,W or WWLWL" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+              <div>
+                <label>Team B game</label>
+                <select id="teamBGame">
+                  <option value="lol">LoL</option>
+                  <option value="cs" selected>CS2</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Team B name</label>
+                <input id="teamBName" placeholder="e.g. Team Spirit" />
+              </div>
+
+              <div>
+                <label>Team B last 5 (W/L)</label>
+                <input id="teamBLast5" placeholder="e.g. L,W,L,W,L or LWLWL" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:16px;">
+              <button class="btn" id="btnGen">Generate Simulation</button>
+              <button class="btn2" id="btnReset">Reset Points</button>
+              <span id="status" class="muted"></span>
+            </div>
           </div>
         </div>
-      </div>
 
-    </section>
+        <!-- Output -->
+        <div class="card full">
+          <div class="arena">
+            <h3>Output</h3>
+            <div id="outputEmpty" class="muted">还没有输出。请填写队伍并点击 Generate。</div>
 
-    <!-- 关键：加载你原来的逻辑 -->
-    <script src="../app.js"></script>
-  </main>
-</div>
+            <div id="outputWrap" style="display:none;">
+              <div class="row" style="justify-content:space-between;">
+                <div>
+                  <div class="big" id="outMatchTitle"></div>
+                  <div class="muted" id="outModeNote"></div>
+                </div>
+
+                <div class="statbox" style="min-width:280px;">
+                  <div class="muted">Win Probability</div>
+                  <div class="big">
+                    <span id="outWinA">50</span>% - <span id="outWinB">50</span>%
+                  </div>
+                  <div class="muted" id="outWinnerText"></div>
+                </div>
+              </div>
+
+              <h4 style="margin-top:14px;">Universal Attribute Panel</h4>
+              <div class="grid2">
+                <div class="statbox">
+                  <div class="big" id="outTeamAName">Team A</div>
+                  <div class="muted"><span id="outTeamAGame"></span></div>
+                  <div id="outStatsA"></div>
+                </div>
+
+                <div class="statbox">
+                  <div class="big" id="outTeamBName">Team B</div>
+                  <div class="muted"><span id="outTeamBGame"></span></div>
+                  <div id="outStatsB"></div>
+                </div>
+              </div>
+
+              <h4 style="margin-top:14px;">Reasons</h4>
+              <ul id="outReasons"></ul>
+
+              <h4>Timeline</h4>
+              <div class="timeline" id="outTimeline"></div>
+
+              <h4>Raw JSON</h4>
+              <pre id="outJson"></pre>
+
+              <p class="muted">
+                Disclaimer: Arena simulation is for analysis & entertainment only. Not betting advice.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ✅ 自动高亮 Sidebar（不用手写 active） -->
+      <script>
+        (function () {
+          const path = location.pathname === "/dashboard" ? "/dashboard/" : location.pathname;
+          document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+          const link = document.querySelector(`.menu a[href="${path}"]`);
+          if (link) link.classList.add("active");
+        })();
+      </script>
+
+      <!-- ✅ 关键：加载你原来的逻辑（注意 simulator 在 dashboard/，所以用 ../app.js） -->
+      <script defer src="../app.js"></script>
+
+    </main>
+  </div>
 </body>
 </html>
-<script>
-  (function () {
-    const path = location.pathname;
-
-    // 移除全部 active
-    document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
-
-    // 根据当前路径，找到对应链接并加 active
-    // 兼容 /dashboard/ 和 /dashboard/index.html
-    const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
-
-    const p = normalize(path);
-
-    let selector = '';
-    if (p === "/dashboard/" || p === "/dashboard/index.html") {
-      selector = '.menu a[href="/dashboard/"]';
-    } else {
-      selector = `.menu a[href="${p}"]`;
-    }
-
-    const activeLink = document.querySelector(selector);
-    if (activeLink) activeLink.classList.add("active");
-  })();
-</script>
 
