@@ -1,25 +1,81 @@
-<script>
-  (function () {
-    const path = location.pathname;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESboard · Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    // 移除全部 active
-    document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+  <!-- 关键：在 dashboard 文件夹里，用 ./dashboard.css -->
+  <link rel="stylesheet" href="./dashboard.css" />
+</head>
 
-    // 根据当前路径，找到对应链接并加 active
-    // 兼容 /dashboard/ 和 /dashboard/index.html
-    const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+<body>
+  <div class="app">
 
-    const p = normalize(path);
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">ESboard</div>
 
-    let selector = '';
-    if (p === "/dashboard/" || p === "/dashboard/index.html") {
-      selector = '.menu a[href="/dashboard/"]';
-    } else {
-      selector = `.menu a[href="${p}"]`;
-    }
+      <nav class="menu">
+        <a href="/dashboard/">Dashboard</a>
+        <a href="/dashboard/simulator.html">Simulator</a>
+        <a href="/dashboard/history.html">History</a>
+        <a href="/dashboard/points.html">Points</a>
+        <a href="/dashboard/settings.html">Settings</a>
+      </nav>
+    </aside>
 
-    const activeLink = document.querySelector(selector);
-    if (activeLink) activeLink.classList.add("active");
-  })();
-</script>
+    <!-- Main -->
+    <main class="main">
 
+      <header class="topbar">
+        <h1>Dashboard</h1>
+        <div class="user">👤</div>
+      </header>
+
+      <section class="content">
+        <div class="card">
+          <h3>Input</h3>
+          <p>Go to Simulator to run a match.</p>
+        </div>
+
+        <div class="card">
+          <h3>Result</h3>
+          <p>Win rate, outcome and summary.</p>
+        </div>
+
+        <div class="card full">
+          <h3>Explanation</h3>
+          <p>Detailed reasoning and timeline will appear here.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ✅ 高亮当前页面（active） -->
+  <script>
+    (function () {
+      const path = location.pathname;
+
+      document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+
+      const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
+      const p = normalize(path);
+
+      let selector = "";
+      if (p === "/dashboard/" || p === "/dashboard/index.html") {
+        selector = '.menu a[href="/dashboard/"]';
+      } else {
+        selector = `.menu a[href="${p}"]`;
+      }
+
+      const activeLink = document.querySelector(selector);
+      if (activeLink) activeLink.classList.add("active");
+    })();
+  </script>
+
+  <!-- ✅ 根目录 app.js，从 /dashboard/ 往上一级 -->
+  <script src="../app.js"></script>
+</body>
+</html>
