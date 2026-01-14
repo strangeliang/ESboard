@@ -5,6 +5,9 @@
   <title>ESboard · Settings</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="./dashboard.css" />
+
+  <!-- ✅ Supabase JS (required for auth) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -28,15 +31,55 @@
       </header>
 
       <section class="content">
+
+        <!-- ✅ Account / Auth -->
+        <div class="card full">
+          <h3>Account</h3>
+          <p class="muted">Sign up with email → confirm email → then sign in.</p>
+
+          <!-- Logged Out -->
+          <div id="authLoggedOut" style="margin-top:12px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <input id="authEmail" placeholder="Email"
+                style="padding:10px; border:1px solid #e5e7eb; border-radius:10px; min-width:260px;">
+              <input id="authPassword" type="password" placeholder="Password"
+                style="padding:10px; border:1px solid #e5e7eb; border-radius:10px; min-width:220px;">
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button id="btnSignIn" class="btn">Sign In</button>
+              <button id="btnSignUp" class="btn2">Sign Up</button>
+              <button id="btnForgot" class="btn2">Forgot Password</button>
+            </div>
+
+            <div id="authMsg" class="muted" style="margin-top:10px;"></div>
+          </div>
+
+          <!-- Logged In -->
+          <div id="authLoggedIn" style="margin-top:12px; display:none;">
+            <div class="muted">Signed in as:</div>
+            <div style="font-size:18px; font-weight:600; margin-top:6px;" id="authedEmail"></div>
+
+            <div style="margin-top:10px;">
+              <button id="btnLogout" class="btn2">Logout</button>
+            </div>
+
+            <div id="authMsg2" class="muted" style="margin-top:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Your original settings card -->
         <div class="card full">
           <h3>Settings</h3>
           <p class="muted">Later you can put language, theme, account settings here.</p>
         </div>
+
       </section>
     </main>
 
   </div>
 
+  <!-- ✅ Sidebar active highlight -->
   <script>
     (function () {
       const path = location.pathname;
@@ -54,7 +97,7 @@
     })();
   </script>
 
+  <!-- ✅ Your app logic -->
   <script src="../app.js"></script>
 </body>
 </html>
-
