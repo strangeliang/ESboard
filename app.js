@@ -13,7 +13,7 @@ const LS_KEY_HISTORY = "esboard_history_v1"; // ✅ NEW: history
 // ✅ Supabase Config (前端用 publishable/anon key)
 // ===============================
 const SUPABASE_URL = "https://fnlrhubwmjxnfwmkcrx.supabase.co";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_FULL_PUBLISHABLE_OR_ANON_KEY_HERE"; // ⚠️换成完整 key（不要 ...）
+const SUPABASE_ANON_KEY = "sb_publishable_vNiDiJP9sUgl8U7boD3_gg_D3VxNCJz"; // ⚠️换成完整 key（不要 ...）
 
 let supabaseClient = null;
 function getSupabase() {
@@ -632,3 +632,4 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
+
