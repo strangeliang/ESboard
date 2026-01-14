@@ -4,18 +4,32 @@
   <meta charset="UTF-8" />
   <title>ESboard · History</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="./dashboard.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <style>
+    .user { position: relative; display:flex; align-items:center; }
+    .userBtn{ border:0; background:transparent; cursor:pointer; font-size:20px; padding:6px 8px; border-radius:10px; }
+    .userBtn:hover{ background: rgba(0,0,0,0.06); }
+    .userMenu{
+      position:absolute; right:0; top:38px; min-width:220px;
+      background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:12px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.12); padding:8px; z-index:999;
+      display:none;
+    }
+    .userMenuHeader{ font-size:12px; color:#666; padding:8px 10px; border-bottom:1px solid rgba(0,0,0,0.06); margin-bottom:6px; }
+    .userMenuItem{ display:block; padding:10px; border-radius:10px; text-decoration:none; color:#111; }
+    .userMenuItem:hover{ background: rgba(0,0,0,0.06); }
+    .userMenuBtn{ width:100%; text-align:left; padding:10px; border-radius:10px; border:0; background:transparent; cursor:pointer; color:#111; }
+    .userMenuBtn:hover{ background: rgba(0,0,0,0.06); }
+  </style>
 </head>
-<body>
 
+<body>
 <div class="app">
 
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="logo">ESboard</div>
-
     <nav class="menu">
       <a href="/dashboard/">Dashboard</a>
       <a href="/dashboard/simulator.html">Simulator</a>
@@ -25,175 +39,11 @@
     </nav>
   </aside>
 
-  <!-- Main -->
   <main class="main">
-
-    <!-- Top Bar -->
     <header class="topbar">
       <h1>History</h1>
-     <div class="user" id="userBtn" title="Account">👤</div>
-
-<!-- User Menu (popup) -->
-<div id="userMenuOverlay" style="display:none; position:fixed; inset:0; z-index:999;"></div>
-
-<div id="userMenu"
-  style="display:none; position:fixed; top:64px; right:28px; z-index:1000;
-         width:320px; background:#fff; border:1px solid #e5e7eb; border-radius:14px;
-         box-shadow:0 12px 30px rgba(0,0,0,0.12); padding:14px;">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-    <div style="font-weight:700;">Account</div>
-    <button id="userMenuClose" class="btn2" style="padding:6px 10px;">✕</button>
-  </div>
-
-  <!-- Logged out -->
-  <div id="authLoggedOut" style="margin-top:12px;">
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <input id="authEmail" placeholder="Email"
-        style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
-      <input id="authPassword" type="password" placeholder="Password"
-        style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
-    </div>
-
-    <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button id="btnSignIn" class="btn">Sign In</button>
-      <button id="btnSignUp" class="btn2">Sign Up</button>
-      <button id="btnForgot" class="btn2">Forgot</button>
-    </div>
-
-    <div id="authMsg" class="muted" style="margin-top:10px;"></div>
-  </div>
-
-  <!-- Logged in -->
-  <div id="authLoggedIn" style="margin-top:12px; display:none;">
-    <div class="muted">Signed in as</div>
-    <div id="authedEmail" style="font-size:14px; font-weight:700; margin-top:6px; word-break:break-all;"></div>
-
-    <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button id="btnLogout" class="btn2">Logout</button>
-      <a href="/dashboard/settings.html" class="btn2" style="display:inline-block; text-decoration:none; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb;">
-        Settings
-      </a>
-    </div>
-
-    <div id="authMsg2" class="muted" style="margin-top:10px;"></div>
-  </div>
-</div>
-
-    </header>
-
-    <!-- Content -->
-    <section class="content">
-      <div class="card full">
-        <h3>Simulation History</h3>
-        <p class="muted" id="historyHint">
-          Past simulations saved in localStorage (esboard_history_v1).
-        </p>
-
-        <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
-          <button id="btnClearHistory" style="padding:8px 10px; border:1px solid #e5e7eb; background:#fff; border-radius:8px; cursor:pointer;">
-            Clear History
-          </button>
-          <span class="muted" id="historyCount"></span>
-        </div>
-
-        <ul id="historyList" style="margin-top:12px; line-height:1.9; padding-left:18px;"></ul>
-
-        <div id="historyEmpty" class="muted" style="margin-top:12px; display:none;">
-          No history yet. Go to Simulator and generate one.
-        </div>
-      </div>
-    </section>
-
-  </main>
-</div>
-
-<!-- ✅ app.js 放在 dashboard 目录里：/dashboard/app.js -->
-<script src="/dashboard/app.js"></script>
-
-<script>
-  (function () {
-    // ===== Sidebar active highlight (auto) =====
-    const path = location.pathname;
-    document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
-
-    const normalize = (p) => (p === "/dashboard" ? "/dashboard/" : p);
-    const p = normalize(path);
-
-    let selector = "";
-    if (p === "/dashboard/" || p === "/dashboard/index.html") {
-      selector = '.menu a[href="/dashboard/"]';
-    } else {
-      selector = `.menu a[href="${p}"]`;
-    }
-
-    const activeLink = document.querySelector(selector);
-    if (activeLink) activeLink.classList.add("active");
-
-    // ===== History render =====
-    const LS_KEY_HISTORY = "esboard_history_v1";
-
-    function loadHistory() {
-      try {
-        const raw = localStorage.getItem(LS_KEY_HISTORY);
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function fmtTime(ms) {
-      try {
-        const d = new Date(ms);
-        return d.toLocaleString();
-      } catch {
-        return "";
-      }
-    }
-
-    function renderHistory() {
-      const listEl = document.getElementById("historyList");
-      const emptyEl = document.getElementById("historyEmpty");
-      const countEl = document.getElementById("historyCount");
-
-      const list = loadHistory();
-      if (countEl) countEl.textContent = list.length ? `Total: ${list.length}` : "";
-
-      if (!listEl || !emptyEl) return;
-
-      listEl.innerHTML = "";
-
-      if (!list.length) {
-        emptyEl.style.display = "block";
-        return;
-      }
-
-      emptyEl.style.display = "none";
-
-      list.forEach((it) => {
-        const li = document.createElement("li");
-
-        const title = it.title || "Match";
-        const winner = it.winner ? `Win: ${it.winner}` : "";
-        const mode = it.mode ? `Mode: ${it.mode}` : "";
-        const bo = it.bo ? `${it.bo}` : "";
-        const prob = (typeof it.winA === "number" && typeof it.winB === "number")
-          ? ` · ${it.winA}% - ${it.winB}%`
-          : "";
-
-        li.textContent = `${title} · ${winner}${prob} · ${mode} ${bo} · ${fmtTime(it.time)}`;
-        listEl.appendChild(li);
-      });
-    }
-
-    // Clear history
-    document.getElementById("btnClearHistory")?.addEventListener("click", () => {
-      localStorage.setItem(LS_KEY_HISTORY, JSON.stringify([]));
-      renderHistory();
-    });
-
-    renderHistory();
-  })();
-</script>
-
-</body>
-</html>
+      <div class="user">
+        <button id="userBtn" class="userBtn" type="button" aria-haspopup="menu" aria-expanded="false">👤</button>
+        <div id="userMenu" class="userMenu" role="menu" aria-label="Account menu">
+          <div id="userMenuHeader" class="userMenuHeader">Not signed in</div>
+          <a id="userMenuSignIn" class="userMenuItem" href="/dashboard/settings.html#account">Sign in / Sign up</a>
