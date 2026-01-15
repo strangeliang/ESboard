@@ -2,27 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESboard · History</title>
+  <title>ESboard · Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="./dashboard.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    .user { position: relative; display:flex; align-items:center; }
-    .userBtn{ border:0; background:transparent; cursor:pointer; font-size:20px; padding:6px 8px; border-radius:10px; }
-    .userBtn:hover{ background: rgba(0,0,0,0.06); }
-    .userMenu{
-      position:absolute; right:0; top:38px; min-width:220px;
-      background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:12px;
-      box-shadow:0 12px 30px rgba(0,0,0,0.12); padding:8px; z-index:999;
-      display:none;
-    }
-    .userMenuHeader{ font-size:12px; color:#666; padding:8px 10px; border-bottom:1px solid rgba(0,0,0,0.06); margin-bottom:6px; }
-    .userMenuItem{ display:block; padding:10px; border-radius:10px; text-decoration:none; color:#111; }
-    .userMenuItem:hover{ background: rgba(0,0,0,0.06); }
-    .userMenuBtn{ width:100%; text-align:left; padding:10px; border-radius:10px; border:0; background:transparent; cursor:pointer; color:#111; }
-    .userMenuBtn:hover{ background: rgba(0,0,0,0.06); }
-  </style>
 </head>
 
 <body>
@@ -41,135 +24,146 @@
 
   <main class="main">
     <header class="topbar">
-      <h1>History</h1>
-      <div class="user">
-        <button id="userBtn" class="userBtn" type="button" aria-haspopup="menu" aria-expanded="false">👤</button>
-        <div id="userMenu" class="userMenu" role="menu" aria-label="Account menu">
-          <div id="userMenuHeader" class="userMenuHeader">Not signed in</div>
-          <a id="userMenuSignIn" class="userMenuItem" href="/dashboard/settings.html#account">Sign in / Sign up</a>
-          <button id="userMenuSignOut" class="userMenuBtn" type="button" style="display:none;">Sign out</button>
-        </div>
+      <h1>Simulator</h1>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="pill">Points: <span id="points">0</span></div>
+        <div class="user" id="userBtn" title="Account">👤</div>
       </div>
     </header>
 
-    <section class="content">
-      <div class="card full">
-        <h3>Simulation History</h3>
-        <p class="muted">Saved locally (localStorage: esboard_history_v1)</p>
-
-        <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <button class="btn2" id="btnClearHistory">Clear History</button>
-          <span class="muted" id="historyCount"></span>
-        </div>
-
-        <div id="historyEmpty" class="muted" style="margin-top:12px; display:none;">
-          No history yet. Go to Simulator and generate one.
-        </div>
-
-        <div id="historyList" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
+    <!-- User Menu -->
+    <div id="userMenuOverlay" style="display:none; position:fixed; inset:0; z-index:999;"></div>
+    <div id="userMenu"
+      style="display:none; position:fixed; top:64px; right:28px; z-index:1000;
+             width:320px; background:#fff; border:1px solid #e5e7eb; border-radius:14px;
+             box-shadow:0 12px 30px rgba(0,0,0,0.12); padding:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="font-weight:700;">Account</div>
+        <button id="userMenuClose" class="btn2" type="button">✕</button>
       </div>
+      <div class="muted" style="margin-top:8px;">Signed as:</div>
+      <div id="userMenuEmail" style="font-weight:700; margin-top:4px;">Not signed in</div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="menuGoSettings" class="btn2" type="button" style="flex:1;">Account</button>
+        <button id="menuSignOut" class="btn" type="button" style="flex:1; display:none;">Sign out</button>
+      </div>
+    </div>
+
+    <section class="content">
+
+      <div class="card full">
+        <h3>Input</h3>
+
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label>Mode</label>
+            <select id="mode">
+              <option value="same">Same Game (LoL vs LoL / CS2 vs CS2)</option>
+              <option value="arena" selected>Cross-Game Arena (跨领域)</option>
+            </select>
+          </div>
+
+          <div>
+            <label>BO</label>
+            <select id="bo">
+              <option value="1">BO1</option>
+              <option value="3" selected>BO3</option>
+              <option value="5">BO5</option>
+            </select>
+          </div>
+
+          <div class="muted" style="max-width:520px;">
+            Arena 模式会把不同游戏映射到统一属性面板（Mechanical/IQ/Teamwork/Clutch/Form/Adapt/Strat）。
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label>Team A game</label>
+            <select id="teamAGame">
+              <option value="lol" selected>LoL</option>
+              <option value="cs">CS2</option>
+            </select>
+          </div>
+          <div>
+            <label>Team A name</label>
+            <input id="teamAName" placeholder="e.g. T1" />
+          </div>
+          <div>
+            <label>Team A last 5 (W/L)</label>
+            <input id="teamALast5" placeholder="e.g. W,W,W,L,W or WWLWL" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label>Team B game</label>
+            <select id="teamBGame">
+              <option value="lol">LoL</option>
+              <option value="cs" selected>CS2</option>
+            </select>
+          </div>
+          <div>
+            <label>Team B name</label>
+            <input id="teamBName" placeholder="e.g. Team Spirit" />
+          </div>
+          <div>
+            <label>Team B last 5 (W/L)</label>
+            <input id="teamBLast5" placeholder="e.g. L,W,L,W,L or LWLWL" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:16px;">
+          <button class="btn" id="btnGen">Generate Simulation</button>
+          <button class="btn2" id="btnReset">Reset Points</button>
+          <span id="status" class="muted"></span>
+        </div>
+      </div>
+
+      <div class="card full">
+        <h3>Output</h3>
+        <div id="outputEmpty" class="muted">No output yet. Fill teams and click Generate.</div>
+
+        <div id="outputWrap" style="display:none;">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div class="big" id="outMatchTitle"></div>
+              <div class="muted" id="outModeNote"></div>
+            </div>
+            <div class="statbox" style="min-width:280px;">
+              <div class="muted">Win Probability</div>
+              <div class="big"><span id="outWinA">50</span>% - <span id="outWinB">50</span>%</div>
+              <div class="muted" id="outWinnerText"></div>
+            </div>
+          </div>
+
+          <h4 style="margin-top:14px;">Universal Attribute Panel</h4>
+          <div class="grid2">
+            <div class="statbox">
+              <div class="big" id="outTeamAName">Team A</div>
+              <div class="muted"><span id="outTeamAGame"></span></div>
+              <div id="outStatsA"></div>
+            </div>
+            <div class="statbox">
+              <div class="big" id="outTeamBName">Team B</div>
+              <div class="muted"><span id="outTeamBGame"></span></div>
+              <div id="outStatsB"></div>
+            </div>
+          </div>
+
+          <h4 style="margin-top:14px;">Timeline</h4>
+          <div class="timeline" id="outTimeline"></div>
+
+          <h4>Raw JSON</h4>
+          <pre id="outJson"></pre>
+        </div>
+      </div>
+
     </section>
   </main>
 </div>
 
 <script src="../app.js"></script>
-
-<script>
-  // user menu
-  (function initUserMenu(){
-    const btn = document.getElementById("userBtn");
-    const menu = document.getElementById("userMenu");
-    const header = document.getElementById("userMenuHeader");
-    const signInLink = document.getElementById("userMenuSignIn");
-    const signOutBtn = document.getElementById("userMenuSignOut");
-    if (!btn || !menu) return;
-
-    function open(){ menu.style.display="block"; btn.setAttribute("aria-expanded","true"); }
-    function close(){ menu.style.display="none"; btn.setAttribute("aria-expanded","false"); }
-    btn.addEventListener("click",(e)=>{ e.stopPropagation(); (menu.style.display==="block")?close():open(); });
-    document.addEventListener("click", close);
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") close(); });
-
-    async function refresh(){
-      const supabase = (typeof getSupabase==="function") ? getSupabase() : null;
-      if(!supabase){ header.textContent="Not signed in"; signInLink.style.display="block"; signOutBtn.style.display="none"; return; }
-      const { data } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-      if(user){
-        header.textContent = user.email || "Signed in";
-        signInLink.style.display="none";
-        signOutBtn.style.display="block";
-      }else{
-        header.textContent="Not signed in";
-        signInLink.style.display="block";
-        signOutBtn.style.display="none";
-      }
-    }
-    signOutBtn.addEventListener("click", async ()=>{
-      const supabase = getSupabase();
-      if(!supabase) return;
-      await supabase.auth.signOut();
-      close(); refresh();
-    });
-    const supabase = (typeof getSupabase==="function") ? getSupabase() : null;
-    if(supabase) supabase.auth.onAuthStateChange(()=>refresh());
-    refresh();
-  })();
-
-  // history render
-  (function(){
-    const LS_KEY_HISTORY = "esboard_history_v1";
-    const listEl = document.getElementById("historyList");
-    const emptyEl = document.getElementById("historyEmpty");
-    const countEl = document.getElementById("historyCount");
-    const clearBtn = document.getElementById("btnClearHistory");
-
-    function load(){
-      try {
-        const raw = localStorage.getItem(LS_KEY_HISTORY);
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
-    }
-
-    function fmt(ms){
-      try { return new Date(ms).toLocaleString(); } catch { return ""; }
-    }
-
-    function render(){
-      const list = load();
-      if (countEl) countEl.textContent = list.length ? `Total: ${list.length}` : "";
-      if (!listEl || !emptyEl) return;
-
-      listEl.innerHTML = "";
-      if (!list.length) {
-        emptyEl.style.display = "block";
-        return;
-      }
-      emptyEl.style.display = "none";
-
-      list.forEach(it=>{
-        const card = document.createElement("div");
-        card.style.border = "1px solid #eee";
-        card.style.borderRadius = "12px";
-        card.style.padding = "12px";
-        card.innerHTML = `
-          <div style="font-weight:700;">${it.title || "Match"}</div>
-          <div class="muted" style="margin-top:4px;">${fmt(it.time)} · ${it.mode || ""} · ${it.bo || ""}</div>
-          <div style="margin-top:6px;">
-            Winner: <b>${it.winner || "-"}</b> · ${it.winA ?? "-"}% - ${it.winB ?? "-"}%
-          </div>
-        `;
-        listEl.appendChild(card);
-      });
-    }
-
-    clearBtn?.addEventListener("click", ()=>{
-      localStorage.setItem(LS_KEY_HISTORY, JSON.stringify([]));
-      render();
-    });
-
-    render();
-  })();
-</script>
 </body>
 </html>
