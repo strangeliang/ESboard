@@ -6,62 +6,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="./dashboard.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    .user { position: relative; display:flex; align-items:center; }
-    .userBtn{ border:0; background:transparent; cursor:pointer; font-size:20px; padding:6px 8px; border-radius:10px; }
-    .userBtn:hover{ background: rgba(0,0,0,0.06); }
-    .userMenu{
-      position:absolute; right:0; top:38px; min-width:220px;
-      background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:12px;
-      box-shadow:0 12px 30px rgba(0,0,0,0.12); padding:8px; z-index:999;
-      display:none;
-    }
-    .userMenuHeader{ font-size:12px; color:#666; padding:8px 10px; border-bottom:1px solid rgba(0,0,0,0.06); margin-bottom:6px; }
-    .userMenuItem{ display:block; padding:10px; border-radius:10px; text-decoration:none; color:#111; }
-    .userMenuItem:hover{ background: rgba(0,0,0,0.06); }
-    .userMenuBtn{ width:100%; text-align:left; padding:10px; border-radius:10px; border:0; background:transparent; cursor:pointer; color:#111; }
-    .userMenuBtn:hover{ background: rgba(0,0,0,0.06); }
-  </style>
 </head>
 
 <body>
 <div class="app">
 
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="logo">ESboard</div>
     <nav class="menu">
       <a href="/dashboard/">Dashboard</a>
-      <a class="active" href="/dashboard/simulator.html">Simulator</a>
+      <a href="/dashboard/simulator.html">Simulator</a>
       <a href="/dashboard/history.html">History</a>
       <a href="/dashboard/points.html">Points</a>
       <a href="/dashboard/settings.html">Settings</a>
     </nav>
   </aside>
 
-  <!-- Main -->
   <main class="main">
-
     <header class="topbar">
       <h1>Simulator</h1>
-
-      <div class="user">
-        <button id="userBtn" class="userBtn" type="button" aria-haspopup="menu" aria-expanded="false">👤</button>
-        <div id="userMenu" class="userMenu" role="menu" aria-label="Account menu">
-          <div id="userMenuHeader" class="userMenuHeader">Not signed in</div>
-          <a id="userMenuSignIn" class="userMenuItem" href="/dashboard/settings.html#account">Sign in / Sign up</a>
-          <button id="userMenuSignOut" class="userMenuBtn" type="button" style="display:none;">Sign out</button>
-        </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="pill">Points: <span id="points">0</span></div>
+        <div class="user" id="userBtn" title="Account">👤</div>
       </div>
     </header>
 
+    <!-- User Menu -->
+    <div id="userMenuOverlay" style="display:none; position:fixed; inset:0; z-index:999;"></div>
+    <div id="userMenu"
+      style="display:none; position:fixed; top:64px; right:28px; z-index:1000;
+             width:320px; background:#fff; border:1px solid #e5e7eb; border-radius:14px;
+             box-shadow:0 12px 30px rgba(0,0,0,0.12); padding:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="font-weight:700;">Account</div>
+        <button id="userMenuClose" class="btn2" type="button">✕</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">Signed as:</div>
+      <div id="userMenuEmail" style="font-weight:700; margin-top:4px;">Not signed in</div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="menuGoSettings" class="btn2" type="button" style="flex:1;">Account</button>
+        <button id="menuSignOut" class="btn" type="button" style="flex:1; display:none;">Sign out</button>
+      </div>
+    </div>
+
     <section class="content">
 
-      <!-- Input -->
       <div class="card full">
         <h3>Input</h3>
-        <p class="muted">Cross-game arena battles. Entertainment + explainable analysis.</p>
 
         <div class="row" style="margin-top:12px;">
           <div>
@@ -129,10 +121,9 @@
         </div>
       </div>
 
-      <!-- Output -->
       <div class="card full">
         <h3>Output</h3>
-        <div id="outputEmpty" class="muted">还没有输出。请填写队伍并点击 Generate。</div>
+        <div id="outputEmpty" class="muted">No output yet. Fill teams and click Generate.</div>
 
         <div id="outputWrap" style="display:none;">
           <div class="row" style="justify-content:space-between;">
@@ -161,10 +152,7 @@
             </div>
           </div>
 
-          <h4 style="margin-top:14px;">Reasons</h4>
-          <ul id="outReasons"></ul>
-
-          <h4>Timeline</h4>
+          <h4 style="margin-top:14px;">Timeline</h4>
           <div class="timeline" id="outTimeline"></div>
 
           <h4>Raw JSON</h4>
@@ -173,56 +161,9 @@
       </div>
 
     </section>
-
   </main>
 </div>
 
 <script src="../app.js"></script>
-
-<script>
-  (function initUserMenu(){
-    const btn = document.getElementById("userBtn");
-    const menu = document.getElementById("userMenu");
-    const header = document.getElementById("userMenuHeader");
-    const signInLink = document.getElementById("userMenuSignIn");
-    const signOutBtn = document.getElementById("userMenuSignOut");
-    if (!btn || !menu) return;
-
-    function open(){ menu.style.display="block"; btn.setAttribute("aria-expanded","true"); }
-    function close(){ menu.style.display="none"; btn.setAttribute("aria-expanded","false"); }
-
-    btn.addEventListener("click",(e)=>{ e.stopPropagation(); (menu.style.display==="block")?close():open(); });
-    document.addEventListener("click", close);
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") close(); });
-
-    async function refresh(){
-      const supabase = (typeof getSupabase==="function") ? getSupabase() : null;
-      if(!supabase){ header.textContent="Not signed in"; signInLink.style.display="block"; signOutBtn.style.display="none"; return; }
-      const { data } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-      if(user){
-        header.textContent = user.email || "Signed in";
-        signInLink.style.display="none";
-        signOutBtn.style.display="block";
-      }else{
-        header.textContent="Not signed in";
-        signInLink.style.display="block";
-        signOutBtn.style.display="none";
-      }
-    }
-
-    signOutBtn.addEventListener("click", async ()=>{
-      const supabase = getSupabase();
-      if(!supabase) return;
-      await supabase.auth.signOut();
-      close();
-      refresh();
-    });
-
-    const supabase = (typeof getSupabase==="function") ? getSupabase() : null;
-    if(supabase) supabase.auth.onAuthStateChange(()=>refresh());
-    refresh();
-  })();
-</script>
 </body>
 </html>
